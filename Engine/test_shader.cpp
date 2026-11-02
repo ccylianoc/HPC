@@ -34,3 +34,5 @@ void main() {
 
     return 0;
 }
+
+// g++ test_shader.cpp engine.cpp shaders.cpp -o test_shader.exe -IEngine -lglfw3 -lglew32 -lopengl32 -lgdi32
