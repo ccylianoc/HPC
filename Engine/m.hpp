@@ -48,6 +48,7 @@ class Matrix4 : public Matrix{
         Matrix4();
         Matrix4(const std::vector<float> &waarden);
         static Matrix4 eenheid();
+        void naarGL(float *doel) const;
 };
 
 enum TransformatieType { ROTATIE, TRANSLATIE, SCHALING, PERSPECTIEF };

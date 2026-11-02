@@ -199,6 +199,15 @@ Matrix4 Matrix4:: eenheid() {
     return resultaat;
 }
 
+void Matrix4::naarGL(float *doel) const {
+    for (int r = 0; r < 4; r++) {
+        for (int k = 0; k < 4; k++) {
+            doel[k * 4 + r] = at(r, k);
+        }
+    }
+}
+
+
 // Transformatie
 
 Transformatie::Transformatie(TransformatieType type, float waarde, AsType as)
