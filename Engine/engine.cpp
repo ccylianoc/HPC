@@ -48,12 +48,14 @@ World::World(int breedte, int hoogte, const std::string &titel)
 
     // --- Shaders, zoals in les 18 ---
     const std::string vertexBron = R"(#version 330 core
-in vec3 pos;
+        in vec3 pos;
 uniform mat4 projection;
 uniform mat4 translation;
 uniform mat4 rotation;
 void main() {
-    gl_Position = projection * translation * rotation * vec4(pos, 1.0);
+vec4 clip = projection * translation * rotation * vec4(pos, 1.0);
+gl_Position = vec4(clip.xyz / clip.w, 1.0);
+
 })";
 
     const std::string fragmentBron = R"(#version 330 core
