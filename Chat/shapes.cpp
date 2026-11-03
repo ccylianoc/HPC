@@ -2,7 +2,7 @@
 #include "shapes.h"
 #include <stdexcept>
 
-Shape::Shape() : vao(0), vbo(0), aantalVertices(0) {}
+Shape::Shape() : vao(0), vbo(0), aantalVertices(0), model(4, 4) {}
 
 Shape::~Shape() {
     if (vbo) glDeleteBuffers(1, &vbo);
@@ -46,7 +46,7 @@ void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
     glBindVertexArray(0);
 }
 
-Shape::Shape() : vao(0), vbo(0), aantalVertices(0), model(4, 4) {}
+
 
 
 // --- Kubus ---
