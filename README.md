@@ -16,6 +16,8 @@ Je maakt een .cpp file aan waar je alle library's include
 #include "file.name"
 ```
 
+Door shapes te gebruiken
+
 ### Eigen note Git
 
 Om via vsc terminal te pushen:
