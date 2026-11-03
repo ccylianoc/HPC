@@ -93,32 +93,20 @@ void main() {
 
 void World::render() {
     glClear(GL_COLOR_BUFFER_BIT);
-
     glUseProgram(programma);
 
-    // Perspectiefmatrix met zp = -1, zoals in les 18.
-    float zp = -1.0f;
-    Matrix4 projectie({
-        zp,  0,  0, 0,
-         0, zp,  0, 0,
-         0,  0, zp, 0,
-         0,  0,  1, 0
-    });
+    // Perspectief via de Transformatie-class: 45 graden gezichtsveld,
+    // aspectratio van het venster, en een bereik van 0.1 tot 100.
+    Matrix4 projectie = Transformatie::perspectief(
+        45.0f, (float)breedte / (float)hoogte, 0.1f, 100.0f).naarMatrix();
 
-    // Translatie naar achteren, zodat de kubus achter het
-    // projectievlak staat.
-    Matrix4 translatie = Matrix4::eenheid();
-    translatie.set(2, 3, -3.0f);
+    // Kubus naar achteren, zodat hij voor de camera staat.
+    Matrix4 translatie = Transformatie::translatie(0, 0, -3).naarMatrix();
 
-    // Rotatie rond de y-as, geanimeerd met de tijd.
+    // Animatie: rotatie rond de y-as op basis van de tijd.
     float hoek = (float)glfwGetTime();
-    Matrix4 rotatie = Matrix4::eenheid();
-    rotatie.set(0, 0,  std::cos(hoek));
-    rotatie.set(0, 2,  std::sin(hoek));
-    rotatie.set(2, 0, -std::sin(hoek));
-    rotatie.set(2, 2,  std::cos(hoek));
+    Matrix4 rotatie = Transformatie::rotatie(hoek, Y_AS).naarMatrix();
 
-    // Matrices naar de shader sturen, kolom-major via naarGL().
     GLfloat glProjectie[16], glTranslatie[16], glRotatie[16];
     projectie.naarGL(glProjectie);
     translatie.naarGL(glTranslatie);
@@ -131,6 +119,7 @@ void World::render() {
     glBindVertexArray(vao);
     glDrawElements(GL_LINES, 24, GL_UNSIGNED_SHORT, 0);
 }
+
 
 void World::run() {
     while (!glfwWindowShouldClose(venster)) {
