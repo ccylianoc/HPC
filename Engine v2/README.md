@@ -125,10 +125,12 @@ int main() {
 Compileren vanuit de hoofdmap:
 
 ```batchfile
-g++ demo.cpp Engine v2\engine.cpp Engine v2\shapes.cpp Engine v2\shaders.cpp Engine v2\matrix.cpp Engine v2\vector.cpp -o demo.exe -IChat -IEngine -lglfw3 -lglew32 -lopengl32 -lgdi32
+g++ demo.cpp "Engine v2\engine.cpp" "Engine v2\shapes.cpp" "Engine v2\shaders.cpp" "Engine v2\matrix.cpp" "Engine v2\vector.cpp" -o demo.exe -I"Engine v2" -lglfw3 -lglew32 -lopengl32 -lgdi32
+
+
 ```
 
-De `-IChat` zorgt dat de headers in /Engine v2 gevonden worden, de `-IEngine` dat `shapes.h` gevonden wordt.
+De `-IEngineV2` zorgt dat de headers in /Engine v2 gevonden worden.
 
 ## Verschil met /Engine
 
