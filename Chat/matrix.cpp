@@ -168,6 +168,12 @@ Matrix Matrix::inverse() const {
     throw std::invalid_argument("Inverse nog niet geimplementeerd voor deze maat.");
 }
 
+void Matrix::naarGL(float *doel) const {
+    for (int r = 0; r < 4; r++)
+        for (int k = 0; k < 4; k++)
+            doel[k * 4 + r] = at(r, k);
+}
+
 
 // Matrix 3
 

@@ -34,6 +34,8 @@ class Matrix {
         float determinant() const;
 
         Matrix inverse() const;
+
+        void naarGL(float *doel) const;
 };
 
 class Matrix3 : public Matrix {
