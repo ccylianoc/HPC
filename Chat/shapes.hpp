@@ -17,7 +17,7 @@ class Shape {
         void upload(const std::vector<float> &vertices, GLuint programma);
 
         // Modelmatrix: schaal, rotatie en positie van deze vorm.
-        Matrix model;
+        Matrix model{4,4};
 
     public:
         Shape();
