@@ -67,7 +67,7 @@ void main() {
     Shader fragment(GL_FRAGMENT_SHADER, fragmentBron);
     fragment.compile();
     Program prog(vertex, fragment);
-    programma = prog.getId();
+    programma = prog.release();
     glUseProgram(programma);
 
     // --- VAO/VBO/EBO, zoals in les 18 ---
@@ -96,7 +96,7 @@ void World::render() {
 
     // Perspectiefmatrix met zp = -1, zoals in les 18.
     float zp = -1.0f;
-    Matrix4 projectie(4, 4, {
+    Matrix4 projectie({
         zp,  0,  0, 0,
          0, zp,  0, 0,
          0,  0, zp, 0,
