@@ -95,7 +95,7 @@ void World::render() {
         Matrix4 positie = Transformatie::translatie(i == 0 ? -1.2f : 1.2f, 0, 0).naarMatrix();
 
         // Volgorde: eerst schalen, dan roteren, dan verplaatsen.
-        Matrix4 model = positie * rotatie * schaal;
+        Matrix model = positie * rotatie * schaal;
         shapes[i]->setModel(model);
 
         GLfloat glModel[16];

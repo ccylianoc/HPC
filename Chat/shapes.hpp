@@ -17,7 +17,7 @@ class Shape {
         void upload(const std::vector<float> &vertices, GLuint programma);
 
         // Modelmatrix: schaal, rotatie en positie van deze vorm.
-        Matrix4 model;
+        Matrix model;
 
     public:
         Shape();
@@ -26,8 +26,8 @@ class Shape {
         // Elke vorm tekent zichzelf met het actieve shader-programma.
         virtual void draw() const = 0;
 
-        void setModel(const Matrix4 &m) { model = m; }
-        Matrix4 getModel() const { return model; }
+        void setModel(const Matrix &m) { model = m; }
+        Matrix getModel() const { return model; }
 
         Shape(const Shape &) = delete;
         Shape &operator=(const Shape &) = delete;
