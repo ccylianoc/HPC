@@ -45,4 +45,6 @@ class Program {
 
         Program(const Program &) = delete;
         Program &operator=(const Program &) = delete;
+
+        GLuint release();
 };

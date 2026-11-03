@@ -71,3 +71,9 @@ Program::~Program() {
 void Program::use() const {
     glUseProgram(id);
 }
+
+GLuint Program::release() {
+    GLuint oud = id;
+    id = 0;
+    return oud;
+}
