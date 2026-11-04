@@ -10,11 +10,11 @@ Shape::~Shape() {
 }
 
 void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
-    // 9 floats per vertex: 3 positie, 3 normaal, 3 kleur (rgb = alpha-bron).
-    if (vertices.size() % 9 != 0) {
-        throw std::invalid_argument("Vertexdata is geen veelvoud van 9 floats [upload]");
+    // 8 floats per vertex: 3 positie, 3 normaal, 2 kleur (rgb = alpha-bron).
+    if (vertices.size() % 8 != 0) {
+        throw std::invalid_argument("Vertexdata is geen veelvoud van 8 floats [upload]");
     }
-    aantalVertices = (GLsizei)(vertices.size() / 9);
+    aantalVertices = (GLsizei)(vertices.size() / 8);
 
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -29,17 +29,19 @@ void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
     const GLsizei stride = 8 * sizeof(float);
 
     GLint posLoc = glGetAttribLocation(programma, "pos");
-    if (posLoc >= 0) {
-        glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
-        glEnableVertexAttribArray(posLoc);
-    }
+    glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
+    glEnableVertexAttribArray(posLoc);
 
     GLint normLoc = glGetAttribLocation(programma, "normaal");
-    if (normLoc >= 0) {
-        glVertexAttribPointer(normLoc, 3, GL_FLOAT, GL_FALSE, stride,
-                              (void*)(3 * sizeof(float)));
-        glEnableVertexAttribArray(normLoc);
+    glVertexAttribPointer(normLoc, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(normLoc);
+
+    GLint uvLoc = glGetAttribLocation(programma, "uv");
+    if (uvLoc >= 0) {
+        glVertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, stride, (void*)(6 * sizeof(float)));
+        glEnableVertexAttribArray(uvLoc);
     }
+
 
     // kleur: 3 floats op offset 24
     GLint kleurLoc = glGetAttribLocation(programma, "kleur");
@@ -52,6 +54,14 @@ void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
     glBindVertexArray(0);
 }
 
+void Shape::uploadIndices(const std::vector<unsigned int> &indices) {
+    aantalIndices = (GLsizei)indices.size();
+    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 (GLsizeiptr)(indices.size() * sizeof(unsigned int)),
+                 indices.data(), GL_STATIC_DRAW);
+}
 
 
 
@@ -78,4 +88,42 @@ Pyramid::Pyramid(GLuint programma) {
 void Pyramid::draw() const {
     glBindVertexArray(vao);
     glDrawArrays(GL_TRIANGLES, 0, aantalVertices);
+}
+
+// --- Sphere ---
+
+Sphere::Sphere(GLuint programma) {
+    std::vector<float> vertices;
+    const int stacks = 24;
+    const int sectors = 48;
+    const float PI = 3.14159265359f;
+
+    for (int i = 0; i <= stacks; i++) {
+        float phi = PI * i / stacks;          // 0 .. PI
+        for (int j = 0; j <= sectors; j++) {
+            float theta = 2.0f * PI * j / sectors;
+            float x = std::sin(phi) * std::cos(theta);
+            float y = std::cos(phi);
+            float z = std::sin(phi) * std::sin(theta);
+
+            vertices.push_back(x); vertices.push_back(y); vertices.push_back(z); // positie
+            vertices.push_back(x); vertices.push_back(y); vertices.push_back(z); // normaal (eenheidsbol)
+            vertices.push_back(0.5f + 0.5f * std::atan2(z, x) / PI);              // u
+            vertices.push_back(1.0f - (float)i / stacks);                         // v
+        }
+    }
+
+    // Indices voor de driehoeken
+    std::vector<unsigned int> indices;
+    for (int i = 0; i < stacks; i++) {
+        for (int j = 0; j < sectors; j++) {
+            unsigned int a = i * (sectors + 1) + j;
+            unsigned int b = a + sectors + 1;
+            indices.push_back(a); indices.push_back(b); indices.push_back(a + 1);
+            indices.push_back(a + 1); indices.push_back(b); indices.push_back(b + 1);
+        }
+    }
+
+    upload(vertices, programma);
+    uploadIndices(indices);   // zie stap 3
 }

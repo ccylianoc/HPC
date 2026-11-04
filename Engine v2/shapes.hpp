@@ -14,6 +14,7 @@ struct Materiaal {
     float specular[3] = {1.0f, 1.0f, 1.0f};
     float shininess   = 32.0f;
     float alpha       = 1.0f;   // 1.0 = ondoorzichtig
+    bool gebruiktTextuur = false; 
 };
 
 
@@ -61,4 +62,9 @@ class Pyramid : public Shape {
     public:
         explicit Pyramid(GLuint programma);
         void draw() const override;
+};
+
+class Sphere : public Shape {
+public:
+    Sphere(GLuint programma);
 };

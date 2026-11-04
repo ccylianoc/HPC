@@ -29,15 +29,18 @@ World::World(int breedte, int hoogte, const std::string &titel)
     // --- Shaders ---
     const std::string vertexBron =
         R"(#version 330 core
+        in vec2 uv;
         in vec3 pos;
         in vec3 normaal;
         uniform mat4 projection;
         uniform mat4 view;
         uniform mat4 model;
+        out vec2 fragUV;
         out vec3 fragNormaal;
         out vec3 fragPos;
         out vec3 fragObjectPos;
         void main() {
+            fragUV = uv;
             fragNormaal = mat3(model) * normaal;
             vec4 wereld = model * vec4(pos, 1.0);
             fragPos = wereld.xyz;
@@ -48,11 +51,14 @@ World::World(int breedte, int hoogte, const std::string &titel)
 
     const std::string fragmentBron =
         R"(#version 330 core
+        in vec2 fragUV;
         in vec3 fragNormaal;
         in vec3 fragPos;
         in vec3 fragObjectPos;
         out vec4 fragColor;
 
+        uniform sampler2D tex;
+        uniform bool gebruiktTexture;
         uniform vec3 lightPos;
         uniform vec3 lightColor;
 
@@ -79,11 +85,13 @@ World::World(int breedte, int hoogte, const std::string &titel)
 
             vec3 naarLicht = normalize(lightPos - fragPos);
 
-            vec3 ambient = lightColor * material.ambient;
+            vec3 basiskleur = gebruiktTextuur ? texture(tex, fragUV).rgb : vec3(1.0);
+
+            vec3 ambient = lightColor * material.ambient * basiskleur;
 
             float diffuseFactor = max(0.0, dot(n, naarLicht));
-            vec3 diffuse = diffuseFactor * lightColor * material.diffuse;
-
+            vec3 diffuse = diffuseFactor * lightColor * material.diffuse * basiskleur;
+            
             vec3 reflectie = reflect(-naarLicht, n);
             vec3 naarOog = normalize(-fragPos);
             float specularFactor = pow(max(0.0, dot(naarOog, reflectie)), material.shininess);
