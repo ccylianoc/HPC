@@ -125,7 +125,6 @@ Sphere::Sphere(GLuint programma) {
 }
 
 void Sphere::draw() const {
-    std::cout << "sphere draw, indices=" << aantalIndices << ", vao=" << vao << std::endl;
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, aantalIndices, GL_UNSIGNED_INT, 0);
 }

@@ -212,11 +212,26 @@ void World::tekenShape(size_t i, float hoek) {
     glUniform1f(glGetUniformLocation(programma, "alpha"), m.alpha);
 
     // Kubus links, piramide rechts. Elke vorm draait om zijn eigen y-as.
-    float x = (i == 0) ? -1.2f : (i == 1 ? 1.2f : 0.0f);
+        float x = (i == 0) ? -1.2f : (i == 1 ? 1.2f : 0.0f);
     float y = (i == 2) ? 1.2f : 0.0f;
+    float s = (i == 2) ? 0.6f : 1.5f;
+
     Matrix4 positie = Transformatie::translatie(x, y, 0).naarMatrix();
-    Matrix4 schaal = Transformatie::schaling(1.5f, 1.5f, 1.5f).naarMatrix();
-    Matrix4 rotatie = Transformatie::rotatie(hoek, Y_AS).naarMatrix();
+    Matrix4 schaal   = Transformatie::schaling(s, s, s).naarMatrix();
+
+    Matrix4 rotatie;
+    switch (i) {
+        case 0:  // kubus: draait rond de y-as
+            rotatie = Transformatie::rotatie(hoek, Y_AS).naarMatrix();
+            break;
+        case 1:  // piramide: draait rond de x-as, tegengesteld
+            rotatie = Transformatie::rotatie(-hoek * 0.7f, X_AS).naarMatrix();
+            break;
+        default: // sphere: draait rond de z-as, sneller
+            rotatie = Transformatie::rotatie(hoek * 1.5f, Z_AS).naarMatrix();
+            break;
+    }
+
 
     // Volgorde: eerst schalen, dan roteren, dan verplaatsen.
     Matrix model = positie * rotatie * schaal;
@@ -227,7 +242,7 @@ void World::tekenShape(size_t i, float hoek) {
 
     glUniformMatrix4fv(glGetUniformLocation(programma, "model"), 1, GL_FALSE, glModel);
 
-    glUniform1i(glGetUniformLocation(programma, "gebruiktTexture"), m.gebruiktTextuur ? 1 : 0);
+    glUniform1i(glGetUniformLocation(programma, "gebruiktTextuur"), m.gebruiktTextuur ? 1 : 0);
         if (m.gebruiktTextuur) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
