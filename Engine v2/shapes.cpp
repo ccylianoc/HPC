@@ -11,10 +11,10 @@ Shape::~Shape() {
 
 void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
     // 6 floats per vertex: 3 voor positie, 3 voor normaal.
-    if (vertices.size() % 6 != 0) {
-        throw std::invalid_argument("Vertexdata is geen veelvoud van 6 floats [upload]");
+    if (vertices.size() % 8 != 0) {
+        throw std::invalid_argument("Vertexdata is geen veelvoud van 8 floats [upload]");
     }
-    aantalVertices = (GLsizei)(vertices.size() / 6);
+    aantalVertices = (GLsizei)(vertices.size() / 8);
 
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -26,7 +26,7 @@ void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
                  vertices.data(),
                  GL_STATIC_DRAW);
 
-    const GLsizei stride = 6 * sizeof(float);
+    const GLsizei stride = 8 * sizeof(float);
 
     // pos: 3 floats op offset 0
     GLint posLoc = glGetAttribLocation(programma, "pos");
@@ -43,6 +43,15 @@ void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
         glEnableVertexAttribArray(normLoc);
     }
 
+        // uv: 2 floats op offset 24
+    GLint uvLoc = glGetAttribLocation(programma, "uv");
+    if (uvLoc >= 0) {
+        glVertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, stride,
+                              (void*)(6 * sizeof(float)));
+        glEnableVertexAttribArray(uvLoc);
+    }
+
+
     glBindVertexArray(0);
 }
 
@@ -52,7 +61,7 @@ void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
 // --- Kubus ---
 
 Cube::Cube(GLuint programma) {
-    std::vector<float> v(verticesCube, verticesCube + 36 * 6);
+    std::vector<float> v(verticesCube, verticesCube + 36 * 8);
     upload(v, programma);
 }
 
@@ -64,7 +73,7 @@ void Cube::draw() const {
 // --- Piramide ---
 
 Pyramid::Pyramid(GLuint programma) {
-    std::vector<float> v(verticesPyramid, verticesPyramid + 18 * 6);
+    std::vector<float> v(verticesPyramid, verticesPyramid + 18 * 8);
     upload(v, programma);
 }
 
