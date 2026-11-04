@@ -48,15 +48,16 @@ void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
 }
 
 void Shape::uploadIndices(const std::vector<unsigned int> &indices) {
-    GLuint ebo = 0;
-    GLsizei aantalIndices = 0;
     aantalIndices = (GLsizei)indices.size();
+    glBindVertexArray(vao);
     glGenBuffers(1, &ebo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
                  (GLsizeiptr)(indices.size() * sizeof(unsigned int)),
                  indices.data(), GL_STATIC_DRAW);
+    glBindVertexArray(0);
 }
+
 
 
 
@@ -124,6 +125,8 @@ Sphere::Sphere(GLuint programma) {
 }
 
 void Sphere::draw() const {
+    std::cout << "sphere draw, indices=" << aantalIndices << ", vao=" << vao << std::endl;
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, aantalIndices, GL_UNSIGNED_INT, 0);
 }
+
