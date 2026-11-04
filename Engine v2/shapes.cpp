@@ -26,7 +26,7 @@ void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
                  vertices.data(),
                  GL_STATIC_DRAW);
 
-    const GLsizei stride = 9 * sizeof(float);
+    const GLsizei stride = 8 * sizeof(float);
 
     GLint posLoc = glGetAttribLocation(programma, "pos");
     if (posLoc >= 0) {

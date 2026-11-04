@@ -17,6 +17,7 @@ class World {
         GLuint programma;
         GLuint texture;
         std::vector<std::unique_ptr<Shape>> shapes;
+        void tekenShape(size_t i, float hoek);
 
         void render();
 
