@@ -43,7 +43,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
         out vec3 fragPos;
         out vec2 fragUV;
         void main() {
-            fragNormaal = normaal;
+            fragNormaal = mat3(model) * normaal;
             fragUV = uv;
             vec4 wereld = model * vec4(pos, 1.0);
             fragPos = wereld.xyz;
@@ -146,6 +146,7 @@ void World::render() {
 
     // Kubus links, piramide rechts. Elke vorm draait om zijn eigen y-as.
     for (size_t i = 0; i < shapes.size(); i++) {
+       
         Matrix4 schaal = Transformatie::schaling(1.5f, 1.5f, 1.5f).naarMatrix();
         Matrix4 rotatie = Transformatie::rotatie(hoek, Y_AS).naarMatrix();
         Matrix4 positie = Transformatie::translatie(i == 0 ? -1.2f : 1.2f, 0, 0).naarMatrix();
