@@ -10,11 +10,11 @@ Shape::~Shape() {
 }
 
 void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
-    // 6 floats per vertex: 3 voor positie, 3 voor normaal.
-    if (vertices.size() % 8 != 0) {
-        throw std::invalid_argument("Vertexdata is geen veelvoud van 8 floats [upload]");
+    // 9 floats per vertex: 3 positie, 3 normaal, 3 kleur (rgb = alpha-bron).
+    if (vertices.size() % 9 != 0) {
+        throw std::invalid_argument("Vertexdata is geen veelvoud van 9 floats [upload]");
     }
-    aantalVertices = (GLsizei)(vertices.size() / 8);
+    aantalVertices = (GLsizei)(vertices.size() / 9);
 
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -26,16 +26,14 @@ void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
                  vertices.data(),
                  GL_STATIC_DRAW);
 
-    const GLsizei stride = 8 * sizeof(float);
+    const GLsizei stride = 9 * sizeof(float);
 
-    // pos: 3 floats op offset 0
     GLint posLoc = glGetAttribLocation(programma, "pos");
     if (posLoc >= 0) {
         glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
         glEnableVertexAttribArray(posLoc);
     }
 
-    // normaal: 3 floats op offset 12
     GLint normLoc = glGetAttribLocation(programma, "normaal");
     if (normLoc >= 0) {
         glVertexAttribPointer(normLoc, 3, GL_FLOAT, GL_FALSE, stride,
@@ -43,17 +41,17 @@ void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
         glEnableVertexAttribArray(normLoc);
     }
 
-        // uv: 2 floats op offset 24
-    GLint uvLoc = glGetAttribLocation(programma, "uv");
-    if (uvLoc >= 0) {
-        glVertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, stride,
+    // kleur: 3 floats op offset 24
+    GLint kleurLoc = glGetAttribLocation(programma, "kleur");
+    if (kleurLoc >= 0) {
+        glVertexAttribPointer(kleurLoc, 3, GL_FLOAT, GL_FALSE, stride,
                               (void*)(6 * sizeof(float)));
-        glEnableVertexAttribArray(uvLoc);
+        glEnableVertexAttribArray(kleurLoc);
     }
-
 
     glBindVertexArray(0);
 }
+
 
 
 

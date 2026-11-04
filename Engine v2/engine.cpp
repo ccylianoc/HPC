@@ -67,6 +67,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
             float shininess;
         };
         uniform Material material;
+        unifrom float alpha;
 
         void main() {
             vec3 n = normalize(fragNormaal);
@@ -82,7 +83,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
             float specularFactor = pow(max(0.0, dot(naarOog, reflectie)), material.shininess);
             vec3 specular = specularFactor * lightColor * material.specular;
 
-            fragColor = vec4(ambient + diffuse + specular, 1.0);
+            fragColor = vec4(ambient + diffuse + specular, alpha);
         })";
 
     Shader vertex(GL_VERTEX_SHADER, vertexBron);
@@ -114,6 +115,9 @@ World::World(int breedte, int hoogte, const std::string &titel)
     shapes.push_back(std::make_unique<Pyramid>(programma));
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
@@ -137,13 +141,6 @@ void World::render() {
     glUniform3f(glGetUniformLocation(programma, "lightColor"), 1.0f, 1.0f, 1.0f);
     glUniform3f(glGetUniformLocation(programma, "viewPos"), 0.0f, 0.0f, 0.0f);
 
-    // Materiaal: goud
-    glUniform3f(glGetUniformLocation(programma, "material.ambient"),  0.24725f, 0.1995f, 0.0745f);
-    glUniform3f(glGetUniformLocation(programma, "material.diffuse"),  0.75164f, 0.60648f, 0.22648f);
-    glUniform3f(glGetUniformLocation(programma, "material.specular"), 0.628281f, 0.555802f, 0.366065f);
-    glUniform1f(glGetUniformLocation(programma, "material.shininess"), 32.0f);
-
-
     glUniformMatrix4fv(glGetUniformLocation(programma, "projection"), 1, GL_FALSE, glProjectie);
     glUniformMatrix4fv(glGetUniformLocation(programma, "view"), 1, GL_FALSE, glView);
 
@@ -151,6 +148,22 @@ void World::render() {
 
     glActiveTexture(GL_TEXTURE0);
     glUniform1i(glGetUniformLocation(programma, "tex"), 0);
+
+    Materiaal goud;
+    goud.ambient[0]=0.24725f; goud.ambient[1]=0.1995f;  goud.ambient[2]=0.0745f;
+    goud.diffuse[0]=0.75164f; goud.diffuse[1]=0.60648f; goud.diffuse[2]=0.22648f;
+    goud.specular[0]=0.628281f; goud.specular[1]=0.555802f; goud.specular[2]=0.366065f;
+    goud.shininess = 32.0f;
+    goud.alpha = 1.0f;
+    shapes[0]->setMateriaal(goud);
+
+    Materiaal glas;
+    glas.ambient[0]=0.1f; glas.ambient[1]=0.1f; glas.ambient[2]=0.15f;
+    glas.diffuse[0]=0.3f; glas.diffuse[1]=0.4f; glas.diffuse[2]=0.5f;
+    glas.specular[0]=1.0f; glas.specular[1]=1.0f; glas.specular[2]=1.0f;
+    glas.shininess = 64.0f;
+    glas.alpha = 0.4f;      // doorzichtig
+    shapes[1]->setMateriaal(glas);
 
 
     // Kubus links, piramide rechts. Elke vorm draait om zijn eigen y-as.
