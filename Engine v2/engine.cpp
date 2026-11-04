@@ -55,32 +55,35 @@ World::World(int breedte, int hoogte, const std::string &titel)
         R"(#version 330 core
         in vec3 fragNormaal;
         in vec3 fragPos;
-        in vec2 fragUV;
         out vec4 fragColor;
-        uniform sampler2D tex;
-        uniform vec3 lightPos;
-        uniform vec3 lightColor;
-        uniform vec3 viewPos;
+
+        vec3 lightPos = vec3(0.2, -2.0, 0.0);
+        vec3 lightColor = vec3(0.5, 0.5, 0.5);
+
+        struct Material {
+            vec3 ambient;
+            vec3 diffuse;
+            vec3 specular;
+            float shininess;
+        };
+        uniform Material material;
+
         void main() {
             vec3 n = normalize(fragNormaal);
             vec3 naarLicht = normalize(lightPos - fragPos);
-            vec3 naarOog = normalize(viewPos - fragPos);
 
-            // Ambient: basislicht zodat niets pikzwart wordt
-            float ambient = 0.15;
+            vec3 ambient = lightColor * material.ambient;
 
-            // Diffuse: hoe loodrechter het licht op het vlak staat
-            float diffuse = max(dot(n, naarLicht), 0.0);
+            float diffuseFactor = max(0.0, dot(n, naarLicht));
+            vec3 diffuse = diffuseFactor * lightColor * material.diffuse;
 
-            // Speculair: glans rond de spiegelhoek
             vec3 reflectie = reflect(-naarLicht, n);
-            float speculair = pow(max(dot(naarOog, reflectie), 0.0), 32.0);
+            vec3 naarOog = normalize(-fragPos);
+            float specularFactor = pow(max(0.0, dot(naarOog, reflectie)), 128.0 * material.shininess);
+            vec3 specular = specularFactor * lightColor * material.specular;
 
-            vec3 kleur = texture(tex, fragUV).rgb;
-            vec3 licht = (ambient + diffuse) * lightColor + speculair * lightColor;
-            fragColor = vec4(kleur * licht, 1.0);
-        }
-        )";
+            fragColor = vec4(ambient + diffuse + specular, 1.0);
+        })";
 
     Shader vertex(GL_VERTEX_SHADER, vertexBron);
     vertex.compile();
@@ -134,13 +137,19 @@ void World::render() {
     glUniform3f(glGetUniformLocation(programma, "lightColor"), 1.0f, 1.0f, 1.0f);
     glUniform3f(glGetUniformLocation(programma, "viewPos"), 0.0f, 0.0f, 0.0f);
 
+    // Materiaal: goud
+    glUniform3f(glGetUniformLocation(programma, "material.ambient"),  0.24725f, 0.1995f, 0.0745f);
+    glUniform3f(glGetUniformLocation(programma, "material.diffuse"),  0.75164f, 0.60648f, 0.22648f);
+    glUniform3f(glGetUniformLocation(programma, "material.specular"), 0.628281f, 0.555802f, 0.366065f);
+    glUniform1f(glGetUniformLocation(programma, "material.shininess"), 0.4f);
+
+
     glUniformMatrix4fv(glGetUniformLocation(programma, "projection"), 1, GL_FALSE, glProjectie);
     glUniformMatrix4fv(glGetUniformLocation(programma, "view"), 1, GL_FALSE, glView);
 
     float hoek = (float)glfwGetTime();
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
     glUniform1i(glGetUniformLocation(programma, "tex"), 0);
 
 
