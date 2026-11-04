@@ -1,73 +1,86 @@
 // Vertices for cube
-static const float verticesCube[] = { // coordinates and normals
-      0.5,  0.5,  0.5, 0, 0, 1, // front top right
-      0.5, -0.5,  0.5, 0, 0, 1, // front bottom right
-     -0.5, -0.5,  0.5, 0, 0, 1, // front bottom left
-     -0.5, -0.5,  0.5, 0, 0, 1, // front bottom left
-     -0.5,  0.5,  0.5, 0, 0, 1, // front top left
-      0.5,  0.5,  0.5, 0, 0, 1, // front top right
+static float verticesCube[] = {
+    // voorvlak (z = 0.5), normaal (0,0,1)
+     0.5f, -0.5f,  0.5f,  0, 0, 1,  1, 0,
+     0.5f,  0.5f,  0.5f,  0, 0, 1,  1, 1,
+    -0.5f,  0.5f,  0.5f,  0, 0, 1,  0, 1,
+     0.5f, -0.5f,  0.5f,  0, 0, 1,  1, 0,
+    -0.5f,  0.5f,  0.5f,  0, 0, 1,  0, 1,
+    -0.5f, -0.5f,  0.5f,  0, 0, 1,  0, 0,
 
-      0.5,  0.5, -0.5, 0, 0, -1, // back top right
-      0.5, -0.5, -0.5, 0, 0, -1, // back bottom right
-     -0.5, -0.5, -0.5, 0, 0, -1, // back bottom left
-     -0.5, -0.5, -0.5, 0, 0, -1, // back bottom left
-     -0.5,  0.5, -0.5, 0, 0, -1, // back top left
-      0.5,  0.5, -0.5, 0, 0, -1, // back top right
+    // achtervlak (z = -0.5), normaal (0,0,-1)
+    -0.5f, -0.5f, -0.5f,  0, 0,-1,  0, 0,
+    -0.5f,  0.5f, -0.5f,  0, 0,-1,  0, 1,
+     0.5f,  0.5f, -0.5f,  0, 0,-1,  1, 1,
+    -0.5f, -0.5f, -0.5f,  0, 0,-1,  0, 0,
+     0.5f,  0.5f, -0.5f,  0, 0,-1,  1, 1,
+     0.5f, -0.5f, -0.5f,  0, 0,-1,  1, 0,
 
-     0.5,  0.5,  0.5, 1, 0, 0, // front top right
-     0.5, -0.5,  0.5, 1, 0, 0, // front bottom right
-     0.5, -0.5, -0.5, 1, 0, 0, // back bottom right
-     0.5, -0.5, -0.5, 1, 0, 0, // back bottom right
-     0.5,  0.5, -0.5, 1, 0, 0, // back top right
-     0.5,  0.5,  0.5, 1, 0, 0, // front top right
+    // rechtervlak (x = 0.5), normaal (1,0,0)
+     0.5f, -0.5f, -0.5f,  1, 0, 0,  0, 0,
+     0.5f,  0.5f, -0.5f,  1, 0, 0,  0, 1,
+     0.5f,  0.5f,  0.5f,  1, 0, 0,  1, 1,
+     0.5f, -0.5f, -0.5f,  1, 0, 0,  0, 0,
+     0.5f,  0.5f,  0.5f,  1, 0, 0,  1, 1,
+     0.5f, -0.5f,  0.5f,  1, 0, 0,  1, 0,
 
-     -0.5,  0.5,  0.5, -1, 0, 0, // front top left
-     -0.5, -0.5,  0.5, -1, 0, 0, // front bottom left
-     -0.5, -0.5, -0.5, -1, 0, 0, // back bottom left
-     -0.5, -0.5, -0.5, -1, 0, 0, // back bottom left
-     -0.5,  0.5, -0.5, -1, 0, 0, // back top left
-     -0.5,  0.5,  0.5, -1, 0, 0, // front top left
+    // linkervlak (x = -0.5), normaal (-1,0,0)
+    -0.5f, -0.5f,  0.5f, -1, 0, 0,  0, 0,
+    -0.5f,  0.5f,  0.5f, -1, 0, 0,  0, 1,
+    -0.5f,  0.5f, -0.5f, -1, 0, 0,  1, 1,
+    -0.5f, -0.5f,  0.5f, -1, 0, 0,  0, 0,
+    -0.5f,  0.5f, -0.5f, -1, 0, 0,  1, 1,
+    -0.5f, -0.5f, -0.5f, -1, 0, 0,  1, 0,
 
-      0.5,  0.5,  0.5, 0, 1, 0, // front top right
-     -0.5,  0.5,  0.5, 0, 1, 0, // front top left
-     -0.5,  0.5, -0.5, 0, 1, 0, // back top left
-     -0.5,  0.5, -0.5, 0, 1, 0, // back top left
-      0.5,  0.5, -0.5, 0, 1, 0, // back top right
-      0.5,  0.5,  0.5, 0, 1, 0, // front top right
+    // bovenvlak (y = 0.5), normaal (0,1,0)
+    -0.5f,  0.5f,  0.5f,  0, 1, 0,  0, 0,
+    -0.5f,  0.5f, -0.5f,  0, 1, 0,  0, 1,
+     0.5f,  0.5f, -0.5f,  0, 1, 0,  1, 1,
+    -0.5f,  0.5f,  0.5f,  0, 1, 0,  0, 0,
+     0.5f,  0.5f, -0.5f,  0, 1, 0,  1, 1,
+     0.5f,  0.5f,  0.5f,  0, 1, 0,  1, 0,
 
-      0.5, -0.5,  0.5, 0, -1, 0, // front bottom right
-     -0.5, -0.5,  0.5, 0, -1, 0, // front bottom left
-     -0.5, -0.5, -0.5, 0, -1, 0, // back bottom left
-     -0.5, -0.5, -0.5, 0, -1, 0, // back bottom left
-      0.5, -0.5, -0.5, 0, -1, 0, // back bottom right
-      0.5, -0.5,  0.5, 0, -1, 0  // front bottom right
+    // ondervlak (y = -0.5), normaal (0,-1,0)
+    -0.5f, -0.5f, -0.5f,  0,-1, 0,  0, 0,
+    -0.5f, -0.5f,  0.5f,  0,-1, 0,  0, 1,
+     0.5f, -0.5f,  0.5f,  0,-1, 0,  1, 1,
+    -0.5f, -0.5f, -0.5f,  0,-1, 0,  0, 0,
+     0.5f, -0.5f,  0.5f,  0,-1, 0,  1, 1,
+     0.5f, -0.5f, -0.5f,  0,-1, 0,  1, 0
 };
 
-// Vertices for pyramid
-static const float verticesPyramid[] = { // coordinates and normals
-       0.5, -0.5,  0.5,  0, -1,  0, // front bottom right
-      -0.5, -0.5,  0.5,  0, -1,  0, // front bottom left
-      -0.5, -0.5, -0.5,  0, -1,  0, // back bottom left
-      -0.5, -0.5, -0.5,  0, -1,  0, // back bottom left
-       0.5, -0.5, -0.5,  0, -1,  0, // back bottom right
-       0.5, -0.5,  0.5,  0, -1,  0, // front bottom right
+// Piramide: grondvlak op y = -0.5, top op (0, 0.5, 0).
+// Per vertex: x, y, z, nx, ny, nz, u, v
+static float verticesPyramid[] = {
+    // grondvlak, normaal (0,-1,0)
+    -0.5f, -0.5f,  0.5f,  0,-1, 0,  0, 0,
+     0.5f, -0.5f,  0.5f,  0,-1, 0,  1, 0,
+     0.5f, -0.5f, -0.5f,  0,-1, 0,  1, 1,
+    -0.5f, -0.5f,  0.5f,  0,-1, 0,  0, 0,
+     0.5f, -0.5f, -0.5f,  0,-1, 0,  1, 1,
+    -0.5f, -0.5f, -0.5f,  0,-1, 0,  0, 1,
 
-       0.5, -0.5,  0.5,  2,  1,  0, // front bottom right
-       0.5, -0.5, -0.5,  2,  1,  0, // back bottom right
-       0,    0.5,  0,    2,  1,  0, // top
+    // voorvlak
+    -0.5f, -0.5f,  0.5f,  0, 0.5f, 0.5f,  0, 0,
+     0.5f, -0.5f,  0.5f,  0, 0.5f, 0.5f,  1, 0,
+     0.0f,  0.5f,  0.0f,  0, 0.5f, 0.5f,  0.5f, 1,
 
-       0.5, -0.5,  0.5,  0,  1,  2, // front bottom right
-      -0.5, -0.5,  0.5,  0,  1,  2, // front bottom left
-       0,    0.5,  0,    0,  1,  2, // top
+    // rechtervlak
+     0.5f, -0.5f,  0.5f,  0.5f, 0.5f, 0,  0, 0,
+     0.5f, -0.5f, -0.5f,  0.5f, 0.5f, 0,  1, 0,
+     0.0f,  0.5f,  0.0f,  0.5f, 0.5f, 0,  0.5f, 1,
 
-      -0.5, -0.5,  0.5, -2,  1,  0, // front bottom left
-      -0.5, -0.5, -0.5, -2,  1,  0, // back bottom left
-       0,    0.5,  0,   -2,  1,  0, // top
+    // achtervlak
+     0.5f, -0.5f, -0.5f,  0, 0.5f,-0.5f,  0, 0,
+    -0.5f, -0.5f, -0.5f,  0, 0.5f,-0.5f,  1, 0,
+     0.0f,  0.5f,  0.0f,  0, 0.5f,-0.5f,  0.5f, 1,
 
-       0.5, -0.5, -0.5,  0,  1, -2, // back bottom right
-      -0.5, -0.5, -0.5,  0,  1, -2, // back bottom left
-       0,    0.5,  0,    0,  1, -2  // top
+    // linkervlak
+    -0.5f, -0.5f, -0.5f, -0.5f, 0.5f, 0,  0, 0,
+    -0.5f, -0.5f,  0.5f, -0.5f, 0.5f, 0,  1, 0,
+     0.0f,  0.5f,  0.0f, -0.5f, 0.5f, 0,  0.5f, 1
 };
+
 
 // Vertices for sphere
 static const float verticesSphere[] = {

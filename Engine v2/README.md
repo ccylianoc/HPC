@@ -126,22 +126,20 @@ Compileren vanuit de hoofdmap:
 
 ```batchfile
 g++ demo.cpp "Engine v2\engine.cpp" "Engine v2\shapes.cpp" "Engine v2\shaders.cpp" "Engine v2\matrix.cpp" "Engine v2\vector.cpp" -o demo.exe -I"Engine v2" -lglfw3 -lglew32 -lopengl32 -lgdi32
-
-
 ```
 
-De `-IEngineV2` zorgt dat de headers in /Engine v2 gevonden worden.
+De `-I"Engine v2"` zorgt dat de headers in /Engine v2 gevonden worden.
 
 ## Verschil met /Engine
 
-| | /Engine | /Engine v2 |
-|---|---|---|
-| Kubus | hardgecodeerd in `engine.cpp` | eigen `Cube`-class |
-| Vormen | één | lijst van shapes |
-| Matrices | handmatig met `set()` | via `Transformatie` |
-| Tekenen | `GL_LINES`, draadmodel | `GL_TRIANGLES`, gevuld |
-| Attributen | alleen `pos` | `pos` en `normaal` |
-| Dieptetest | uit | aan |
+|            | /Engine                         | /Engine v2               |
+| ---------- | ------------------------------- | ------------------------ |
+| Kubus      | hardgecodeerd in `engine.cpp` | eigen `Cube`-class     |
+| Vormen     | één                           | lijst van shapes         |
+| Matrices   | handmatig met `set()`         | via `Transformatie`    |
+| Tekenen    | `GL_LINES`, draadmodel        | `GL_TRIANGLES`, gevuld |
+| Attributen | alleen `pos`                  | `pos` en `normaal`   |
+| Dieptetest | uit                             | aan                      |
 
 ### Eigen note Git
 
