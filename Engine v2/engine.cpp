@@ -40,23 +40,47 @@ World::World(int breedte, int hoogte, const std::string &titel)
         uniform mat4 view;
         uniform mat4 model;
         out vec3 fragNormaal;
+        out vec3 fragPos;
         out vec2 fragUV;
         void main() {
             fragNormaal = normaal;
             fragUV = uv;
-            vec4 clip = projection * view * model * vec4(pos, 1.0);
+            vec4 wereld = model * vec4(pos, 1.0);
+            fragPos = wereld.xyz;
+            vec4 clip = projection * view * wereld;
             gl_Position = vec4(clip.xyz / clip.w, 1.0);
         })";
 
     const std::string fragmentBron = 
         R"(#version 330 core
         in vec3 fragNormaal;
+        in vec3 fragPos;
         in vec2 fragUV;
         out vec4 fragColor;
         uniform sampler2D tex;
+        uniform vec3 lightPos;
+        uniform vec3 lightColor;
+        uniform vec3 viewPos;
         void main() {
-            fragColor = texture(tex, fragUV);
-        })";
+            vec3 n = normalize(fragNormaal);
+            vec3 naarLicht = normalize(lightPos - fragPos);
+            vec3 naarOog = normalize(viewPos - fragPos);
+
+            // Ambient: basislicht zodat niets pikzwart wordt
+            float ambient = 0.15;
+
+            // Diffuse: hoe loodrechter het licht op het vlak staat
+            float diffuse = max(dot(n, naarLicht), 0.0);
+
+            // Speculair: glans rond de spiegelhoek
+            vec3 reflectie = reflect(-naarLicht, n);
+            float speculair = pow(max(dot(naarOog, reflectie), 0.0), 32.0);
+
+            vec3 kleur = texture(tex, fragUV).rgb;
+            vec3 licht = (ambient + diffuse) * lightColor + speculair * lightColor;
+            fragColor = vec4(kleur * licht, 1.0);
+        }
+        )";
 
     Shader vertex(GL_VERTEX_SHADER, vertexBron);
     vertex.compile();
@@ -105,6 +129,10 @@ void World::render() {
     GLfloat glProjectie[16], glView[16];
     projectie.naarGL(glProjectie);
     view.naarGL(glView);
+
+    glUniform3f(glGetUniformLocation(programma, "lightPos"), 0.2f, 1.2f, 0.0f);
+    glUniform3f(glGetUniformLocation(programma, "lightColor"), 1.0f, 1.0f, 1.0f);
+    glUniform3f(glGetUniformLocation(programma, "viewPos"), 0.0f, 0.0f, 0.0f);
 
     glUniformMatrix4fv(glGetUniformLocation(programma, "projection"), 1, GL_FALSE, glProjectie);
     glUniformMatrix4fv(glGetUniformLocation(programma, "view"), 1, GL_FALSE, glView);
