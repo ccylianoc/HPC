@@ -57,8 +57,8 @@ World::World(int breedte, int hoogte, const std::string &titel)
         in vec3 fragPos;
         out vec4 fragColor;
 
-        vec3 lightPos = vec3(0.2, -2.0, 0.0);
-        vec3 lightColor = vec3(0.5, 0.5, 0.5);
+        vec3 lightPos = vec3(0.2, 1.2, 0.0);
+        vec3 lightColor = vec3(1.0, 1.0, 1.0);
 
         struct Material {
             vec3 ambient;
@@ -79,7 +79,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
 
             vec3 reflectie = reflect(-naarLicht, n);
             vec3 naarOog = normalize(-fragPos);
-            float specularFactor = pow(max(0.0, dot(naarOog, reflectie)), 128.0 * material.shininess);
+            float specularFactor = pow(max(0.0, dot(naarOog, reflectie)), material.shininess);
             vec3 specular = specularFactor * lightColor * material.specular;
 
             fragColor = vec4(ambient + diffuse + specular, 1.0);
@@ -141,7 +141,7 @@ void World::render() {
     glUniform3f(glGetUniformLocation(programma, "material.ambient"),  0.24725f, 0.1995f, 0.0745f);
     glUniform3f(glGetUniformLocation(programma, "material.diffuse"),  0.75164f, 0.60648f, 0.22648f);
     glUniform3f(glGetUniformLocation(programma, "material.specular"), 0.628281f, 0.555802f, 0.366065f);
-    glUniform1f(glGetUniformLocation(programma, "material.shininess"), 0.4f);
+    glUniform1f(glGetUniformLocation(programma, "material.shininess"), 32.0f);
 
 
     glUniformMatrix4fv(glGetUniformLocation(programma, "projection"), 1, GL_FALSE, glProjectie);
@@ -155,7 +155,14 @@ void World::render() {
 
     // Kubus links, piramide rechts. Elke vorm draait om zijn eigen y-as.
     for (size_t i = 0; i < shapes.size(); i++) {
-       
+        const Materiaal &m = shapes[i]->getMateriaal();
+        glUniform3fv(glGetUniformLocation(programma, "material.ambient"), 1, m.ambient);
+        glUniform3fv(glGetUniformLocation(programma, "material.diffuse"), 1, m.diffuse);
+        glUniform3fv(glGetUniformLocation(programma, "material.specular"), 1, m.specular);
+        glUniform1f(glGetUniformLocation(programma, "material.shininess"), m.shininess);
+        glUniform1f(glGetUniformLocation(programma, "alpha"), m.alpha);
+
+
         Matrix4 schaal = Transformatie::schaling(1.5f, 1.5f, 1.5f).naarMatrix();
         Matrix4 rotatie = Transformatie::rotatie(hoek, Y_AS).naarMatrix();
         Matrix4 positie = Transformatie::translatie(i == 0 ? -1.2f : 1.2f, 0, 0).naarMatrix();

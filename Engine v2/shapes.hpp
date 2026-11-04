@@ -7,6 +7,16 @@
 // Een Shape is een tekenbare vorm met eigen geometrie op de GPU.
 // De vertices komen uit shapes.h en bestaan uit 6 floats per vertex:
 // x, y, z (positie) gevolgd door nx, ny, nz (normaal).
+
+struct Materiaal {
+    float ambient[3]  = {0.3f, 0.3f, 0.3f};
+    float diffuse[3]  = {0.8f, 0.8f, 0.8f};
+    float specular[3] = {1.0f, 1.0f, 1.0f};
+    float shininess   = 32.0f;
+    float alpha       = 1.0f;   // 1.0 = ondoorzichtig
+};
+
+
 class Shape {
     protected:
         GLuint vao, vbo;
@@ -19,7 +29,13 @@ class Shape {
         // Modelmatrix: schaal, rotatie en positie van deze vorm.
         Matrix model{4,4};
 
+    private:
+        Materiaal materiaal;
+
     public:
+        void setMateriaal(const Materiaal &m) { materiaal = m; }
+        const Materiaal &getMateriaal() const { return materiaal; }
+
         Shape();
         virtual ~Shape();
 
