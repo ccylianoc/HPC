@@ -1,6 +1,7 @@
 #include "shapes.hpp"
 #include "shapes.h"
 #include <stdexcept>
+#include <cmath>
 
 Shape::Shape() : vao(0), vbo(0), aantalVertices(0), model(4, 4) {}
 

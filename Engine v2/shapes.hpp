@@ -22,6 +22,8 @@ class Shape {
     protected:
         GLuint vao, vbo;
         GLsizei aantalVertices;
+        GLuint ebo = 0;
+        GLsizei aantalIndices = 0;
 
         // Zet de vertices in een VAO/VBO en koppelt de attributen
         // pos en normaal aan het actieve shader-programma.
@@ -48,6 +50,8 @@ class Shape {
 
         Shape(const Shape &) = delete;
         Shape &operator=(const Shape &) = delete;
+        void uploadIndices(const std::vector<unsigned int> &indices);
+
 };
 
 // Kubus met ribbe 1, gecentreerd op de oorsprong (36 vertices).

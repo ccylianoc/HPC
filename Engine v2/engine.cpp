@@ -1,4 +1,6 @@
 #include "engine.hpp"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 #include <stdexcept>
 #include <cmath>
 
@@ -215,7 +217,6 @@ void World::tekenShape(size_t i, float hoek) {
     Matrix4 positie = Transformatie::translatie(x, y, 0).naarMatrix();
     Matrix4 schaal = Transformatie::schaling(1.5f, 1.5f, 1.5f).naarMatrix();
     Matrix4 rotatie = Transformatie::rotatie(hoek, Y_AS).naarMatrix();
-    Matrix4 positie = Transformatie::translatie(i == 0 ? -1.2f : 1.2f, 0, 0).naarMatrix();
 
     // Volgorde: eerst schalen, dan roteren, dan verplaatsen.
     Matrix model = positie * rotatie * schaal;
