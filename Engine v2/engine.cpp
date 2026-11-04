@@ -104,6 +104,7 @@ void World::render() {
 
         shapes[i]->draw();
     }
+
 }
 
 void World::run() {
