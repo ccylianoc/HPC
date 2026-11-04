@@ -1,4 +1,6 @@
 #include "engine.hpp"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 #include <stdexcept>
 #include <cmath>
 
@@ -29,26 +31,32 @@ World::World(int breedte, int hoogte, const std::string &titel)
     // --- Shaders ---
     // De normaal wordt doorgegeven aan de fragment-shader, zodat je
     // later belichting kunt toevoegen zonder de pipeline te wijzigen.
-    const std::string vertexBron = R"(#version 330 core
-in vec3 pos;
-in vec3 normaal;
-uniform mat4 projection;
-uniform mat4 view;
-uniform mat4 model;
-out vec3 fragNormaal;
-void main() {
-    fragNormaal = normaal;
-    vec4 clip = projection * view * model * vec4(pos, 1.0);
-    gl_Position = vec4(clip.xyz / clip.w, 1.0);
-})";
+    const std::string vertexBron = 
+        R"(#version 330 core
+        in vec3 pos;
+        in vec3 normaal;
+        in vec2 uv;
+        uniform mat4 projection;
+        uniform mat4 view;
+        uniform mat4 model;
+        out vec3 fragNormaal;
+        out vec2 fragUV;
+        void main() {
+            fragNormaal = normaal;
+            fragUV = uv;
+            vec4 clip = projection * view * model * vec4(pos, 1.0);
+            gl_Position = vec4(clip.xyz / clip.w, 1.0);
+        })";
 
-    const std::string fragmentBron = R"(#version 330 core
-in vec3 fragNormaal;
-out vec4 fragColor;
-void main() {
-    // Voorlopig effen kleur; de normaal is al beschikbaar voor belichting.
-    fragColor = vec4(0.5, 0.5, 1.0, 1.0);
-})";
+    const std::string fragmentBron = 
+        R"(#version 330 core
+        in vec3 fragNormaal;
+        in vec2 fragUV;
+        out vec4 fragColor;
+        uniform sampler2D tex;
+        void main() {
+            fragColor = texture(tex, fragUV);
+        })";
 
     Shader vertex(GL_VERTEX_SHADER, vertexBron);
     vertex.compile();
@@ -57,6 +65,21 @@ void main() {
     Program prog(vertex, fragment);
     programma = prog.release();
     glUseProgram(programma);
+
+    // --- Texture inladen (eenmalig) ---
+    int texBreedte, texHoogte, texKanalen;
+    stbi_set_flip_vertically_on_load(true);   // v = 0 onderaan
+    unsigned char *data = stbi_load("texture.png", &texBreedte, &texHoogte, &texKanalen, 0);
+    if (!data) {
+        throw std::runtime_error("Texture inladen mislukt: texture.png");
+    }
+
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texBreedte, texHoogte, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
+
 
     // --- Shapes aanmaken; het programma moet actief zijn voor de
     // attribuut-locaties opgevraagd kunnen worden. ---
@@ -87,6 +110,11 @@ void World::render() {
     glUniformMatrix4fv(glGetUniformLocation(programma, "view"), 1, GL_FALSE, glView);
 
     float hoek = (float)glfwGetTime();
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glUniform1i(glGetUniformLocation(programma, "tex"), 0);
+
 
     // Kubus links, piramide rechts. Elke vorm draait om zijn eigen y-as.
     for (size_t i = 0; i < shapes.size(); i++) {
@@ -122,6 +150,7 @@ void World::run() {
 
 World::~World() {
     // Shapes eerst opruimen, terwijl de GL-context nog bestaat.
+    if (texture) glDeleteTextures(1, &texture);
     shapes.clear();
     if (venster) {
         glfwDestroyWindow(venster);

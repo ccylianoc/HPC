@@ -15,6 +15,7 @@ class World {
         int breedte, hoogte;
 
         GLuint programma;
+        GLuint texture;
         std::vector<std::unique_ptr<Shape>> shapes;
 
         void render();
