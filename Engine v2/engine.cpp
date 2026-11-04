@@ -67,7 +67,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
             float shininess;
         };
         uniform Material material;
-        unifrom float alpha;
+        uniform float alpha;
 
         void main() {
             vec3 n = normalize(fragNormaal);
