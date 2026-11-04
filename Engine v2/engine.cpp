@@ -58,7 +58,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
         out vec4 fragColor;
 
         uniform sampler2D tex;
-        uniform bool gebruiktTexture;
+        uniform bool gebruiktTextuur;
         uniform vec3 lightPos;
         uniform vec3 lightColor;
 
@@ -91,7 +91,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
 
             float diffuseFactor = max(0.0, dot(n, naarLicht));
             vec3 diffuse = diffuseFactor * lightColor * material.diffuse * basiskleur;
-            
+
             vec3 reflectie = reflect(-naarLicht, n);
             vec3 naarOog = normalize(-fragPos);
             float specularFactor = pow(max(0.0, dot(naarOog, reflectie)), material.shininess);
@@ -108,10 +108,26 @@ World::World(int breedte, int hoogte, const std::string &titel)
     programma = prog.release();
     glUseProgram(programma);
 
+    int tw, th, tk;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char *data = stbi_load("texture.png", &tw, &th, &tk, 0);
+    if (!data) throw std::runtime_error("Texture inladen mislukt: texture.png");
+
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tw, th, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
+
+    glUseProgram(programma);
+    glUniform1i(glGetUniformLocation(programma, "tex"), 0);
+
+
     // --- Shapes aanmaken; het programma moet actief zijn voor de
     // attribuut-locaties opgevraagd kunnen worden. ---
     shapes.push_back(std::make_unique<Cube>(programma));
     shapes.push_back(std::make_unique<Pyramid>(programma));
+    shapes.push_back(std::make_unique<Sphere>(programma));
 
     // --- Materialen (eenmalig instellen) ---
     Materiaal goud;
@@ -129,6 +145,16 @@ World::World(int breedte, int hoogte, const std::string &titel)
     glas.shininess = 64.0f;
     glas.alpha = 0.4f;      // doorzichtig
     shapes[1]->setMateriaal(glas);
+
+    Materiaal steen;
+    steen.ambient[0] = 0.4f; steen.ambient[1] = 0.4f; steen.ambient[2] = 0.4f;
+    steen.diffuse[0] = 1.0f; steen.diffuse[1] = 1.0f; steen.diffuse[2] = 1.0f;
+    steen.specular[0] = 0.3f; steen.specular[1] = 0.3f; steen.specular[2] = 0.3f;
+    steen.shininess = 16.0f;
+    steen.alpha = 1.0f;
+    steen.gebruiktTextuur = true;
+    shapes[2]->setMateriaal(steen);
+
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -184,6 +210,9 @@ void World::tekenShape(size_t i, float hoek) {
     glUniform1f(glGetUniformLocation(programma, "alpha"), m.alpha);
 
     // Kubus links, piramide rechts. Elke vorm draait om zijn eigen y-as.
+    float x = (i == 0) ? -1.2f : (i == 1 ? 1.2f : 0.0f);
+    float y = (i == 2) ? 1.2f : 0.0f;
+    Matrix4 positie = Transformatie::translatie(x, y, 0).naarMatrix();
     Matrix4 schaal = Transformatie::schaling(1.5f, 1.5f, 1.5f).naarMatrix();
     Matrix4 rotatie = Transformatie::rotatie(hoek, Y_AS).naarMatrix();
     Matrix4 positie = Transformatie::translatie(i == 0 ? -1.2f : 1.2f, 0, 0).naarMatrix();
@@ -194,7 +223,15 @@ void World::tekenShape(size_t i, float hoek) {
 
     GLfloat glModel[16];
     model.naarGL(glModel);
+
     glUniformMatrix4fv(glGetUniformLocation(programma, "model"), 1, GL_FALSE, glModel);
+
+    glUniform1i(glGetUniformLocation(programma, "gebruiktTexture"), m.gebruiktTextuur ? 1 : 0);
+        if (m.gebruiktTextuur) {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+    }
+
 
     shapes[i]->draw();
 }

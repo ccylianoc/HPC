@@ -67,4 +67,5 @@ class Pyramid : public Shape {
 class Sphere : public Shape {
 public:
     Sphere(GLuint programma);
+    void draw() const override;
 };

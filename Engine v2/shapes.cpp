@@ -7,6 +7,7 @@ Shape::Shape() : vao(0), vbo(0), aantalVertices(0), model(4, 4) {}
 Shape::~Shape() {
     if (vbo) glDeleteBuffers(1, &vbo);
     if (vao) glDeleteVertexArrays(1, &vao);
+    if (ebo) glDeleteBuffers(1, &ebo);
 }
 
 void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
@@ -42,19 +43,12 @@ void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
         glEnableVertexAttribArray(uvLoc);
     }
 
-
-    // kleur: 3 floats op offset 24
-    GLint kleurLoc = glGetAttribLocation(programma, "kleur");
-    if (kleurLoc >= 0) {
-        glVertexAttribPointer(kleurLoc, 3, GL_FLOAT, GL_FALSE, stride,
-                              (void*)(6 * sizeof(float)));
-        glEnableVertexAttribArray(kleurLoc);
-    }
-
     glBindVertexArray(0);
 }
 
 void Shape::uploadIndices(const std::vector<unsigned int> &indices) {
+    GLuint ebo = 0;
+    GLsizei aantalIndices = 0;
     aantalIndices = (GLsizei)indices.size();
     glGenBuffers(1, &ebo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
@@ -126,4 +120,9 @@ Sphere::Sphere(GLuint programma) {
 
     upload(vertices, programma);
     uploadIndices(indices);   // zie stap 3
+}
+
+void Sphere::draw() const {
+    glBindVertexArray(vao);
+    glDrawElements(GL_TRIANGLES, aantalIndices, GL_UNSIGNED_INT, 0);
 }
