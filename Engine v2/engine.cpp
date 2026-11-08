@@ -169,6 +169,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
 void World::render() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(programma);
+    glDisable(GL_BLEND);
 
     // Perspectief via de Transformatie-class.
     Matrix4 projectie = camera.projectie();
