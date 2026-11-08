@@ -84,7 +84,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
                 sin(fragObjectPos.y * freq),
                 sin(fragObjectPos.z * freq)
             ) * 0.15;
-            
+
             n = normalize(n + perturbatie);
 
             vec3 naarLicht = normalize(lightPos - fragPos);
@@ -131,6 +131,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
     shapes.push_back(std::make_unique<Cube>(programma));
     shapes.push_back(std::make_unique<Pyramid>(programma));
     shapes.push_back(std::make_unique<Sphere>(programma));
+    shapes.push_back(std::make_unique<Cylinder>(programma));
 
     // --- Materialen (eenmalig instellen) ---
     Materiaal goud;
@@ -166,6 +167,18 @@ World::World(int breedte, int hoogte, const std::string &titel)
     koper.alpha = 1.0f;
     shapes[3]->setMateriaal(koper);
 
+    // --- Beginposities en -groottes (eenmalig) ---
+    shapes[0]->getTransform().setTranslatie(-1.2f, 0.0f, 0.0f);
+    shapes[0]->getTransform().setSchaal(1.5f);
+
+    shapes[1]->getTransform().setTranslatie(1.2f, 0.0f, 0.0f);
+    shapes[1]->getTransform().setSchaal(1.5f);
+
+    shapes[2]->getTransform().setTranslatie(0.0f, 1.2f, 0.0f);
+    shapes[2]->getTransform().setSchaal(0.6f);
+
+    shapes[3]->getTransform().setTranslatie(0.0f, -1.2f, 0.0f);
+    shapes[3]->getTransform().setSchaal(1.2f);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -194,8 +207,8 @@ void World::render() {
 
     float t = (float)glfwGetTime();
 
-    // De animatie past de transformatie van elke vorm aan. De vorm
-    // zelf weet niets van tijd; de wereld bepaalt wat er gebeurt.
+    // De animatie past de rotatie van elke vorm aan. Positie en schaal
+    // blijven staan; alleen de rotatie verandert per frame.
     if (shapes.size() >= 3) {
         shapes[0]->getTransform().setRotatie(0.0f, t, 0.0f);
         shapes[1]->getTransform().setRotatie(-t * 0.7f, 0.0f, 0.0f);
@@ -216,20 +229,6 @@ void World::render() {
         if (shapes[i]->getMateriaal().alpha < 1.0f) tekenShape(i);
     }
     glDepthMask(GL_TRUE);
-
-    shapes[0]->getTransform().setTranslatie(-1.2f, 0.0f, 0.0f);
-    shapes[0]->getTransform().setSchaal(1.5f);
-
-    shapes[1]->getTransform().setTranslatie(1.2f, 0.0f, 0.0f);
-    shapes[1]->getTransform().setSchaal(1.5f);
-
-    shapes[2]->getTransform().setTranslatie(0.0f, 1.2f, 0.0f);
-    shapes[2]->getTransform().setSchaal(0.6f);
-
-        shapes.push_back(std::make_unique<Cylinder>(programma));
-    shapes[3]->getTransform().setTranslatie(0.0f, -1.2f, 0.0f);
-    shapes[3]->getTransform().setSchaal(1.2f);
-
 }
 
 void World::tekenShape(size_t i) {
