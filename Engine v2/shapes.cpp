@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <cmath>
 
-Shape::Shape() : vao(0), vbo(0), aantalVertices(0), model(4, 4) {}
+Shape::Shape() : vao(0), vbo(0), aantalVertices(0) {}
 
 Shape::~Shape() {
     if (vbo) glDeleteBuffers(1, &vbo);
@@ -12,7 +12,7 @@ Shape::~Shape() {
 }
 
 void Shape::upload(const std::vector<float> &vertices, GLuint programma) {
-    // 8 floats per vertex: 3 positie, 3 normaal, 2 kleur (rgb = alpha-bron).
+    // 8 floats per vertex: 3 positie, 3 normaal, 2 textuurcoordinaat.
     if (vertices.size() % 8 != 0) {
         throw std::invalid_argument("Vertexdata is geen veelvoud van 8 floats [upload]");
     }
@@ -59,9 +59,6 @@ void Shape::uploadIndices(const std::vector<unsigned int> &indices) {
 }
 
 
-
-
-
 // --- Kubus ---
 
 Cube::Cube(GLuint programma) {
@@ -86,7 +83,7 @@ void Pyramid::draw() const {
     glDrawArrays(GL_TRIANGLES, 0, aantalVertices);
 }
 
-// --- Sphere ---
+// --- Bol ---
 
 Sphere::Sphere(GLuint programma) {
     std::vector<float> vertices;
@@ -102,14 +99,13 @@ Sphere::Sphere(GLuint programma) {
             float y = std::cos(phi);
             float z = std::sin(phi) * std::sin(theta);
 
-            vertices.push_back(x); vertices.push_back(y); vertices.push_back(z); // positie
-            vertices.push_back(x); vertices.push_back(y); vertices.push_back(z); // normaal (eenheidsbol)
-            vertices.push_back(0.5f + 0.5f * std::atan2(z, x) / PI);              // u
-            vertices.push_back(1.0f - (float)i / stacks);                         // v
+            vertices.push_back(0.5f * x); vertices.push_back(0.5f * y); vertices.push_back(0.5f * z);
+            vertices.push_back(x);        vertices.push_back(y);        vertices.push_back(z);
+            vertices.push_back(0.5f + 0.5f * std::atan2(z, x) / PI);    // u
+            vertices.push_back(1.0f - (float)i / stacks);               // v
         }
     }
 
-    // Indices voor de driehoeken
     std::vector<unsigned int> indices;
     for (int i = 0; i < stacks; i++) {
         for (int j = 0; j < sectors; j++) {
@@ -121,7 +117,7 @@ Sphere::Sphere(GLuint programma) {
     }
 
     upload(vertices, programma);
-    uploadIndices(indices);   // zie stap 3
+    uploadIndices(indices);
 }
 
 void Sphere::draw() const {
@@ -129,3 +125,81 @@ void Sphere::draw() const {
     glDrawElements(GL_TRIANGLES, aantalIndices, GL_UNSIGNED_INT, 0);
 }
 
+// --- Cilinder ---
+
+Cylinder::Cylinder(GLuint programma, int segmenten) {
+    if (segmenten < 3) {
+        throw std::invalid_argument("Cilinder heeft minstens 3 segmenten nodig");
+    }
+
+    std::vector<float> vertices;
+    std::vector<unsigned int> indices;
+    const float PI = 3.14159265359f;
+    const float r = 0.5f;      // straal
+    const float h = 0.5f;      // halve hoogte
+
+    // Zijkant: per segment twee ringen (onder en boven) met een
+    // normaal die loodrecht naar buiten wijst.
+    for (int i = 0; i <= segmenten; i++) {
+        float hoek = 2.0f * PI * i / segmenten;
+        float x = std::cos(hoek);
+        float z = std::sin(hoek);
+        float u = (float)i / segmenten;
+
+        // onder
+        vertices.insert(vertices.end(), {
+            r * x, -h, r * z,   x, 0, z,   u, 0
+        });
+        // boven
+        vertices.insert(vertices.end(), {
+            r * x,  h, r * z,   x, 0, z,   u, 1
+        });
+    }
+
+    for (int i = 0; i < segmenten; i++) {
+        unsigned int a = i * 2;
+        unsigned int b = a + 1;
+        unsigned int c = a + 2;
+        unsigned int d = a + 3;
+        indices.push_back(a); indices.push_back(c); indices.push_back(b);
+        indices.push_back(b); indices.push_back(c); indices.push_back(d);
+    }
+
+    // Deksels: een middelpunt plus de ring, met een vlakke normaal.
+    auto deksel = [&](float y, float ny, float v) {
+        unsigned int midden = (unsigned int)(vertices.size() / 8);
+        vertices.insert(vertices.end(), { 0, y, 0,  0, ny, 0,  0.5f, 0.5f });
+        unsigned int start = (unsigned int)(vertices.size() / 8);
+        for (int i = 0; i <= segmenten; i++) {
+            float hoek = 2.0f * PI * i / segmenten;
+            float x = std::cos(hoek);
+            float z = std::sin(hoek);
+            vertices.insert(vertices.end(), {
+                r * x, y, r * z,  0, ny, 0,  0.5f + 0.5f * x, 0.5f + 0.5f * z
+            });
+        }
+        for (int i = 0; i < segmenten; i++) {
+            if (ny > 0) {
+                indices.push_back(midden);
+                indices.push_back(start + i);
+                indices.push_back(start + i + 1);
+            } else {
+                indices.push_back(midden);
+                indices.push_back(start + i + 1);
+                indices.push_back(start + i);
+            }
+        }
+        (void)v;
+    };
+
+    deksel( h,  1.0f, 1.0f);
+    deksel(-h, -1.0f, 0.0f);
+
+    upload(vertices, programma);
+    uploadIndices(indices);
+}
+
+void Cylinder::draw() const {
+    glBindVertexArray(vao);
+    glDrawElements(GL_TRIANGLES, aantalIndices, GL_UNSIGNED_INT, 0);
+}

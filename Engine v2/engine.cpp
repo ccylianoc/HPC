@@ -158,6 +158,14 @@ World::World(int breedte, int hoogte, const std::string &titel)
     steen.gebruiktTextuur = true;
     shapes[2]->setMateriaal(steen);
 
+    Materiaal koper;
+    koper.ambient[0] = 0.19f; koper.ambient[1] = 0.07f; koper.ambient[2] = 0.02f;
+    koper.diffuse[0] = 0.70f; koper.diffuse[1] = 0.27f; koper.diffuse[2] = 0.08f;
+    koper.specular[0] = 0.99f; koper.specular[1] = 0.94f; koper.specular[2] = 0.81f;
+    koper.shininess = 64.0f;
+    koper.alpha = 1.0f;
+    shapes[3]->setMateriaal(koper);
+
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -171,11 +179,7 @@ void World::render() {
     glUseProgram(programma);
     glDisable(GL_BLEND);
 
-    // Perspectief via de Transformatie-class.
     Matrix4 projectie = camera.projectie();
-
-    // Camera staat op de oorsprong en kijkt naar -z; de view-matrix
-    // schuift de wereld 4 eenheden naar voren.
     Matrix4 view = camera.view();
 
     GLfloat glProjectie[16], glView[16];
@@ -188,23 +192,47 @@ void World::render() {
     glUniformMatrix4fv(glGetUniformLocation(programma, "projection"), 1, GL_FALSE, glProjectie);
     glUniformMatrix4fv(glGetUniformLocation(programma, "view"), 1, GL_FALSE, glView);
 
-    float hoek = (float)glfwGetTime();
+    float t = (float)glfwGetTime();
+
+    // De animatie past de transformatie van elke vorm aan. De vorm
+    // zelf weet niets van tijd; de wereld bepaalt wat er gebeurt.
+    if (shapes.size() >= 3) {
+        shapes[0]->getTransform().setRotatie(0.0f, t, 0.0f);
+        shapes[1]->getTransform().setRotatie(-t * 0.7f, 0.0f, 0.0f);
+        shapes[2]->getTransform().setRotatie(0.0f, 0.0f, t * 1.5f);
+    }
+    if (shapes.size() >= 4) {
+        shapes[3]->getTransform().setRotatie(0.0f, t * 0.5f, 0.0f);
+    }
 
     // Pass 1: ondoorzichtige objecten (schrijven diepte).
     for (size_t i = 0; i < shapes.size(); i++) {
-        if (shapes[i]->getMateriaal().alpha >= 1.0f) tekenShape(i, hoek);
+        if (shapes[i]->getMateriaal().alpha >= 1.0f) tekenShape(i);
     }
 
     // Pass 2: transparante objecten, zonder diepte te schrijven.
     glDepthMask(GL_FALSE);
     for (size_t i = 0; i < shapes.size(); i++) {
-        if (shapes[i]->getMateriaal().alpha < 1.0f) tekenShape(i, hoek);
+        if (shapes[i]->getMateriaal().alpha < 1.0f) tekenShape(i);
     }
     glDepthMask(GL_TRUE);
+
+    shapes[0]->getTransform().setTranslatie(-1.2f, 0.0f, 0.0f);
+    shapes[0]->getTransform().setSchaal(1.5f);
+
+    shapes[1]->getTransform().setTranslatie(1.2f, 0.0f, 0.0f);
+    shapes[1]->getTransform().setSchaal(1.5f);
+
+    shapes[2]->getTransform().setTranslatie(0.0f, 1.2f, 0.0f);
+    shapes[2]->getTransform().setSchaal(0.6f);
+
+        shapes.push_back(std::make_unique<Cylinder>(programma));
+    shapes[3]->getTransform().setTranslatie(0.0f, -1.2f, 0.0f);
+    shapes[3]->getTransform().setSchaal(1.2f);
+
 }
 
-void World::tekenShape(size_t i, float hoek) {
-    // Materiaal-uniforms per object.
+void World::tekenShape(size_t i) {
     const Materiaal &m = shapes[i]->getMateriaal();
     glUniform3fv(glGetUniformLocation(programma, "material.ambient"), 1, m.ambient);
     glUniform3fv(glGetUniformLocation(programma, "material.diffuse"), 1, m.diffuse);
@@ -212,46 +240,20 @@ void World::tekenShape(size_t i, float hoek) {
     glUniform1f(glGetUniformLocation(programma, "material.shininess"), m.shininess);
     glUniform1f(glGetUniformLocation(programma, "alpha"), m.alpha);
 
-    // Kubus links, piramide rechts. Elke vorm draait om zijn eigen y-as.
-        float x = (i == 0) ? -1.2f : (i == 1 ? 1.2f : 0.0f);
-    float y = (i == 2) ? 1.2f : 0.0f;
-    float s = (i == 2) ? 0.6f : 1.5f;
-
-    Matrix4 positie = Transformatie::translatie(x, y, 0).naarMatrix();
-    Matrix4 schaal   = Transformatie::schaling(s, s, s).naarMatrix();
-
-    Matrix4 rotatie;
-    switch (i) {
-        case 0:  // kubus: draait rond de y-as
-            rotatie = Transformatie::rotatie(hoek, Y_AS).naarMatrix();
-            break;
-        case 1:  // piramide: draait rond de x-as, tegengesteld
-            rotatie = Transformatie::rotatie(-hoek * 0.7f, X_AS).naarMatrix();
-            break;
-        default: // sphere: draait rond de z-as, sneller
-            rotatie = Transformatie::rotatie(hoek * 1.5f, Z_AS).naarMatrix();
-            break;
-    }
-
-
-    // Volgorde: eerst schalen, dan roteren, dan verplaatsen.
-    Matrix model = positie * rotatie * schaal;
-    shapes[i]->setModel(model);
-
+    Matrix4 model = shapes[i]->getModel();
     GLfloat glModel[16];
     model.naarGL(glModel);
-
     glUniformMatrix4fv(glGetUniformLocation(programma, "model"), 1, GL_FALSE, glModel);
 
     glUniform1i(glGetUniformLocation(programma, "gebruiktTextuur"), m.gebruiktTextuur ? 1 : 0);
-        if (m.gebruiktTextuur) {
+    if (m.gebruiktTextuur) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture);
     }
 
-
     shapes[i]->draw();
 }
+
 
 void World::run() {
     while (!glfwWindowShouldClose(venster)) {

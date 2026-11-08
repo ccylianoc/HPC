@@ -10,6 +10,7 @@
 #include "shapes.hpp"
 #include "camera.hpp"
 #include "lightsource.hpp"
+#include "transformatie.hpp"
 
 class World {
     private:
@@ -19,7 +20,7 @@ class World {
         GLuint programma;
         GLuint texture;
         std::vector<std::unique_ptr<Shape>> shapes;
-        void tekenShape(size_t i, float hoek);
+        void tekenShape(size_t i);
 
         void render();
 
