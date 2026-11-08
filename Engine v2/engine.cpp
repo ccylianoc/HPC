@@ -6,7 +6,8 @@
 
 World::World(int breedte, int hoogte, const std::string &titel)
     : venster(nullptr), breedte(breedte), hoogte(hoogte),
-      camera(Vector({0, 0, 5}), 1.0f, 800.0f / 600.0f, 0.1f, 100.0f) {
+      camera(Vector({0, 0, 5}), 1.0f, 800.0f / 600.0f, 0.1f, 100.0f),
+      lichtbron(Vector({2, 2, 3}), 1.0f, 1.0f, 1.0f){
 
     if (!glfwInit()) {
         throw std::runtime_error("GLFW initialisatie mislukt.");

@@ -9,6 +9,7 @@
 #include "matrix.hpp"
 #include "shapes.hpp"
 #include "camera.hpp"
+#include "lightsource.hpp"
 
 class World {
     private:
@@ -26,6 +27,8 @@ class World {
         World(int breedte, int hoogte, const std::string &titel);
 
         Camera camera;
+
+        Lightsource lichtbron;
 
         void run();
 
