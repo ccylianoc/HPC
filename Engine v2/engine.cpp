@@ -5,7 +5,8 @@
 #include <cmath>
 
 World::World(int breedte, int hoogte, const std::string &titel)
-    : venster(nullptr), breedte(breedte), hoogte(hoogte) {
+    : venster(nullptr), breedte(breedte), hoogte(hoogte),
+      camera(Vector({0, 0, 5}), 1.0f, 800.0f / 600.0f, 0.1f, 100.0f) {
 
     if (!glfwInit()) {
         throw std::runtime_error("GLFW initialisatie mislukt.");
@@ -124,8 +125,6 @@ World::World(int breedte, int hoogte, const std::string &titel)
     glUseProgram(programma);
     glUniform1i(glGetUniformLocation(programma, "tex"), 0);
 
-    Camera camera(Vector({0, 0, 5}), 1.0f, 800.0f / 600.0f, 0.1f, 100.0f);
-
     // --- Shapes aanmaken; het programma moet actief zijn voor de
     // attribuut-locaties opgevraagd kunnen worden. ---
     shapes.push_back(std::make_unique<Cube>(programma));
@@ -171,12 +170,11 @@ void World::render() {
     glUseProgram(programma);
 
     // Perspectief via de Transformatie-class.
-    Matrix4 projectie = Transformatie::perspectief(
-        45.0f, (float)breedte / (float)hoogte, 0.1f, 100.0f).naarMatrix();
+    Matrix4 projectie = camera.projectie();
 
     // Camera staat op de oorsprong en kijkt naar -z; de view-matrix
     // schuift de wereld 4 eenheden naar voren.
-    Matrix4 view = Transformatie::translatie(0, 0, -4).naarMatrix();
+    Matrix4 view = camera.view();
 
     GLfloat glProjectie[16], glView[16];
     projectie.naarGL(glProjectie);

@@ -25,5 +25,5 @@ Matrix4 Camera::view() const {
 Matrix4 Camera::compleet() const { return projectie() * view(); }
 Matrix4 Camera::zonderProjectie() const { return view(); }
 Matrix4 Camera::zonderTranslatieEnProjectie() const {
-    return Matrix4::eenheid(4);
+    return Matrix4::eenheid();
 }
