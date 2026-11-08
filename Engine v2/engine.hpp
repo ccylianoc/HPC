@@ -8,6 +8,7 @@
 #include "shaders.hpp"
 #include "matrix.hpp"
 #include "shapes.hpp"
+#include "camera.hpp"
 
 class World {
     private:
@@ -23,6 +24,8 @@ class World {
 
     public:
         World(int breedte, int hoogte, const std::string &titel);
+
+        Camera camera;
 
         void run();
 
