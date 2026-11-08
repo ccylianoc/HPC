@@ -6,7 +6,7 @@
 
 World::World(int breedte, int hoogte, const std::string &titel)
     : venster(nullptr), breedte(breedte), hoogte(hoogte),
-      camera(Vector({0, 0, 5}), 1.0f, 800.0f / 600.0f, 0.1f, 100.0f),
+      camera(Vector({0, 1.5, 5}), 1.0f, 800.0f / 600.0f, 0.1f, 100.0f),
       lichtbron(Vector({2, 2, 3}), 1.0f, 1.0f, 1.0f){
 
     if (!glfwInit()) {
@@ -174,11 +174,11 @@ World::World(int breedte, int hoogte, const std::string &titel)
     shapes[1]->getTransform().setTranslatie(1.2f, 0.0f, 0.0f);
     shapes[1]->getTransform().setSchaal(1.5f);
 
-    shapes[2]->getTransform().setTranslatie(0.0f, 1.2f, 0.0f);
-    shapes[2]->getTransform().setSchaal(0.6f);
+    shapes[2]->getTransform().setTranslatie(-1.2f, 3.0f, 0.0f);
+    shapes[2]->getTransform().setSchaal(1.5f);
 
-    shapes[3]->getTransform().setTranslatie(0.0f, -1.2f, 0.0f);
-    shapes[3]->getTransform().setSchaal(0.3f);
+    shapes[3]->getTransform().setTranslatie(1.2f, 3.0f, 0.0f);
+    shapes[3]->getTransform().setSchaal(1.5f);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);

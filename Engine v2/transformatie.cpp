@@ -1,6 +1,7 @@
 #include "transformatie.hpp"
 #include <cmath>
 #include <vector>
+#include <cstdio>
 
 Transform::Transform()
     : sx(1), sy(1), sz(1),
@@ -34,12 +35,13 @@ Matrix4 Transform::model() const {
     float r21 = cy * sxr;
     float r22 = cy * cx;
 
-    // Model = T * R * S, kolom-major zoals OpenGL verwacht.
+    // Model = T * R * S, rij-major (zoals Matrix4 verwacht).
+    // Rij 0: R-rij 0 geschaald met sx, sy, sz
     std::vector<float> m = {
-        r00 * sx,  r10 * sx,  r20 * sx,  0.0f,
-        r01 * sy,  r11 * sy,  r21 * sy,  0.0f,
-        r02 * sz,  r12 * sz,  r22 * sz,  0.0f,
-        tx,        ty,        tz,        1.0f
+        r00 * sx, r01 * sy, r02 * sz, tx,
+        r10 * sx, r11 * sy, r12 * sz, ty,
+        r20 * sx, r21 * sy, r22 * sz, tz,
+        0.0f,     0.0f,     0.0f,     1.0f
     };
 
     return Matrix4(m);
