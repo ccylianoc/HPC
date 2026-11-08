@@ -1,6 +1,7 @@
 #include "engine.hpp"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "camera.hpp"
 #include <stdexcept>
 #include <cmath>
 
@@ -13,7 +14,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
 
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);d
 
     venster = glfwCreateWindow(breedte, hoogte, titel.c_str(), NULL, NULL);
     if (!venster) {
@@ -48,7 +49,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
             fragPos = wereld.xyz;
             fragObjectPos = pos;
             vec4 clip = projection * view * wereld;
-            gl_Position = vec4(clip.xyz / clip.w, 1.0);
+            gl_Position = transformatie * vec4(pos, 1.0);
         })";
 
     const std::string fragmentBron =
@@ -124,6 +125,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
     glUseProgram(programma);
     glUniform1i(glGetUniformLocation(programma, "tex"), 0);
 
+    Camera camera(Vector({0, 0, 5}), 1.0f, 800.0f / 600.0f, 0.1f, 100.0f);
 
     // --- Shapes aanmaken; het programma moet actief zijn voor de
     // attribuut-locaties opgevraagd kunnen worden. ---
@@ -234,7 +236,7 @@ void World::tekenShape(size_t i, float hoek) {
 
 
     // Volgorde: eerst schalen, dan roteren, dan verplaatsen.
-    Matrix model = positie * rotatie * schaal;
+    Matrix model = camera.compleet() * positie * rotatie * schaal;
     shapes[i]->setModel(model);
 
     GLfloat glModel[16];
