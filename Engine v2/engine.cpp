@@ -178,7 +178,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
     shapes[2]->getTransform().setSchaal(0.6f);
 
     shapes[3]->getTransform().setTranslatie(0.0f, -1.2f, 0.0f);
-    shapes[3]->getTransform().setSchaal(1.2f);
+    shapes[3]->getTransform().setSchaal(0.3f);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
