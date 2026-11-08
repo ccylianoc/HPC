@@ -19,13 +19,13 @@ Matrix4 Camera::projectie() const {
 }
 
 Matrix4 Camera::view() const {
-    Matrix terug   = Transformatie::translatie(0, 0, -3).naarMatrix();
-    Matrix kantel  = Transformatie::rotatie(30.0f * 3.14159265f / 180.0f, X_AS).naarMatrix();
     Matrix naarOog = Transformatie::translatie(-positie.at(0), -positie.at(1), -positie.at(2)).naarMatrix();
+    Matrix pitch   = Transformatie::rotatie(pitchHoek, X_AS).naarMatrix();
+    Matrix yaw     = Transformatie::rotatie(yawHoek, Y_AS).naarMatrix();
+    Matrix terug   = Transformatie::translatie(0, 0, -3).naarMatrix();
 
-    Matrix m = naarOog * kantel * terug;
+    Matrix m = naarOog * pitch * yaw * terug;
 
-    // Matrix -> Matrix4: elementen overzetten, rij-major blijft rij-major.
     std::vector<float> waarden(16);
     for (int r = 0; r < 4; r++)
         for (int k = 0; k < 4; k++)
@@ -33,6 +33,8 @@ Matrix4 Camera::view() const {
 
     return Matrix4(waarden);
 }
+
+
 
 Matrix4 Camera::compleet() const {
     Matrix m = projectie() * view();
@@ -49,4 +51,18 @@ Matrix4 Camera::zonderProjectie() const {
 
 Matrix4 Camera::zonderTranslatieEnProjectie() const {
     return Matrix4::eenheid();
+}
+
+void Camera::beweeg(float dx, float dy, float dz) {
+    positie.set(0, positie.at(0) + dx);
+    positie.set(1, positie.at(1) + dy);
+    positie.set(2, positie.at(2) + dz);
+}
+
+void Camera::draai(float dyaw, float dpitch) {
+    yawHoek   += dyaw;
+    pitchHoek += dpitch;
+    // voorkom over de kop slaan
+    if (pitchHoek >  1.5f) pitchHoek =  1.5f;
+    if (pitchHoek < -1.5f) pitchHoek = -1.5f;
 }
