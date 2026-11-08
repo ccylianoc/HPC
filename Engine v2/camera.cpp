@@ -1,4 +1,5 @@
 #include "camera.hpp"
+#include <cmath>
 
 Camera::Camera(const Vector &positie, float fov, float aspect, float nearZ, float farZ)
     : positie(positie), fov(fov), aspect(aspect), nearZ(nearZ), farZ(farZ) {}
@@ -7,16 +8,19 @@ void Camera::setPositie(const Vector &p) { positie = p; }
 Vector Camera::getPositie() const { return positie; }
 
 Matrix4 Camera::projectie() const {
-    // Perspectief met projectievlak op z = -zp, oog in de oorsprong.
-    // Rij-major, zoals Matrix4 verwacht; naarGL() transponeert.
-    float zp = 1.0f;
+    float n = 0.1f;      // near
+    float f = 100.0f;    // far
+    float t = 1.0f / std::tan(fov / 2.0f);
+
+    // Rij-major. Let op: (2,3) = -1 en (3,2) = -1, niet andersom.
     return Matrix4({
-        zp, 0,  0,  0,
-        0,  zp, 0,  0,
-        0,  0,  zp, 0,
-        0,  0,  1,  0
+        t / aspect, 0,  0,                          0,
+        0,          t,  0,                          0,
+        0,          0,  (f + n) / (n - f),          (2 * f * n) / (n - f),
+        0,          0,  -1,                         0
     });
 }
+
 
 Matrix4 Camera::view() const {
     Matrix naarOog = Transformatie::translatie(-positie.at(0), -positie.at(1), -positie.at(2)).naarMatrix();

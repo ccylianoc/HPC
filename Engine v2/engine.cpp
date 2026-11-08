@@ -258,30 +258,26 @@ void World::run() {
     while (!glfwWindowShouldClose(venster)) {
         glfwPollEvents();
 
-        float stap  = 0.1f;
-        float kijk  = 0.02f;
+        float stap = 0.1f;
+        float kijk = 0.02f;
 
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) camera.beweeg(0, 0, -stap);
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) camera.beweeg(0, 0,  stap);
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) camera.beweeg(-stap, 0, 0);
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) camera.beweeg( stap, 0, 0);
-        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) camera.beweeg(0,  stap, 0);
-        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) camera.beweeg(0, -stap, 0);
+        if (glfwGetKey(venster, GLFW_KEY_W) == GLFW_PRESS) camera.beweeg(0, 0, -stap);
+        if (glfwGetKey(venster, GLFW_KEY_S) == GLFW_PRESS) camera.beweeg(0, 0,  stap);
+        if (glfwGetKey(venster, GLFW_KEY_A) == GLFW_PRESS) camera.beweeg(-stap, 0, 0);
+        if (glfwGetKey(venster, GLFW_KEY_D) == GLFW_PRESS) camera.beweeg( stap, 0, 0);
+        if (glfwGetKey(venster, GLFW_KEY_Q) == GLFW_PRESS) camera.beweeg(0,  stap, 0);
+        if (glfwGetKey(venster, GLFW_KEY_E) == GLFW_PRESS) camera.beweeg(0, -stap, 0);
 
-        if (glfwGetKey(window, GLFW_KEY_LEFT)  == GLFW_PRESS) camera.draai( kijk, 0);
-        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) camera.draai(-kijk, 0);
-        if (glfwGetKey(window, GLFW_KEY_UP)    == GLFW_PRESS) camera.draai(0,  kijk);
-        if (glfwGetKey(window, GLFW_KEY_DOWN)  == GLFW_PRESS) camera.draai(0, -kijk);
-
-        int w, h;
-        glfwGetFramebufferSize(venster, &w, &h);
-        glViewport(0, 0, w, h);
+        if (glfwGetKey(venster, GLFW_KEY_LEFT)  == GLFW_PRESS) camera.draai(-kijk, 0);
+        if (glfwGetKey(venster, GLFW_KEY_RIGHT) == GLFW_PRESS) camera.draai(kijk, 0);
+        if (glfwGetKey(venster, GLFW_KEY_UP)    == GLFW_PRESS) camera.draai(0, -kijk);
+        if (glfwGetKey(venster, GLFW_KEY_DOWN)  == GLFW_PRESS) camera.draai(0, kijk);
 
         render();
-
         glfwSwapBuffers(venster);
     }
 }
+
 
 World::~World() {
     // Shapes eerst opruimen, terwijl de GL-context nog bestaat.
