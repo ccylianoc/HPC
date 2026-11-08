@@ -7,17 +7,31 @@ void Camera::setPositie(const Vector &p) { positie = p; }
 Vector Camera::getPositie() const { return positie; }
 
 Matrix4 Camera::projectie() const {
-    float zp = fov;
+    // Perspectief met projectievlak op z = -zp, oog in de oorsprong.
+    // Rij-major, zoals Matrix4 verwacht; naarGL() transponeert.
+    float zp = 1.0f;
     return Matrix4({
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, -zp, -1,
-        0, 0, -zp, 0
+        zp, 0,  0,  0,
+        0,  zp, 0,  0,
+        0,  0,  zp, 0,
+        0,  0,  1,  0
     });
 }
 
 Matrix4 Camera::view() const {
-    return Transformatie::translatie(-positie.at(0), -positie.at(1), -positie.at(2)).naarMatrix();
+    Matrix terug   = Transformatie::translatie(0, 0, -3).naarMatrix();
+    Matrix kantel  = Transformatie::rotatie(30.0f * 3.14159265f / 180.0f, X_AS).naarMatrix();
+    Matrix naarOog = Transformatie::translatie(-positie.at(0), -positie.at(1), -positie.at(2)).naarMatrix();
+
+    Matrix m = naarOog * kantel * terug;
+
+    // Matrix -> Matrix4: elementen overzetten, rij-major blijft rij-major.
+    std::vector<float> waarden(16);
+    for (int r = 0; r < 4; r++)
+        for (int k = 0; k < 4; k++)
+            waarden[r * 4 + k] = m.at(r, k);
+
+    return Matrix4(waarden);
 }
 
 Matrix4 Camera::compleet() const {
