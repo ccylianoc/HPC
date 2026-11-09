@@ -25,7 +25,7 @@ class World {
 
         void render();
         void verwerkInvoer();
-        void meetFrame(double renderTijd);
+        void meetFrame();
         bool toetsPress(int toets);   // true bij de overgang van los naar ingedrukt
 
         // Toestand van invoer en animatie
@@ -37,10 +37,9 @@ class World {
 
         // Efficientie en meting
         bool geoptimaliseerd = true;
-        bool vsync = false;
         int meetFrames = 0;
         double meetStart = 0.0;
-        double renderSom = 0.0;
+        bool gemeten = false;      // true zodra de meting van 1000 frames geprint is
         void resetMeting();
 
     public:
@@ -60,8 +59,6 @@ class World {
             shapes.push_back(std::make_unique<T>(programma, std::forward<Args>(args)...));
             return static_cast<T &>(*shapes.back());
         }
-
-        size_t aantalShapes() const { return shapes.size(); }
 
         Camera camera;
 

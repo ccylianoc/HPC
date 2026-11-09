@@ -38,15 +38,6 @@ Camera::Camera(const Vector &positie, float fov, float aspect, float nearZ, floa
 void Camera::setPositie(const Vector &p) { positie = p; }
 Vector Camera::getPositie() const { return positie; }
 
-const char *Camera::projectieNaam() const {
-    switch (projType) {
-        case PROJ_ORTHO:       return "orthografisch";
-        case PROJ_PARALLEL:    return "parallel (oblique, cabinet)";
-        case PROJ_ISOMETRISCH: return "isometrisch";
-        default:          return "perspectief";
-    }
-}
-
 Matrix4 Camera::projectie() const {
     float n = nearZ;
     float f = farZ;

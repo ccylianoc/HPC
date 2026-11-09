@@ -2,11 +2,11 @@
  * TOETSENOVERZICHT
  * ----------------
  * Camera (zonder Shift):
- *   (alle snelheden zijn per seconde, dus onafhankelijk van de framerate)
  *   W / S            vooruit / achteruit
  *   A / D            links / rechts
  *   Q / E            omhoog / omlaag
  *   Pijltjes         yaw (links/rechts) en pitch (omhoog/omlaag)
+ *   (snelheden zijn per seconde, dus onafhankelijk van de framerate)
  *
  * Lichtbron (met Shift ingedrukt; de camera reageert dan niet):
  *   Shift + pijltjes links/rechts   licht in x
@@ -24,16 +24,14 @@
  *      dus de modelmatrix-cache wordt volledig benut)
  *   B  wisselen tussen GEOPTIMALISEERD (viewProjection 1x per frame +
  *      modelcache) en NAIEF (alles per shape opnieuw berekend)
- *   V  vsync aan / uit (standaard uit, anders meet je alleen de refresh rate)
- *   Elke 1000 frames print de console de gemiddelde frametijd en de
- *   gemiddelde render()-tijd (CPU) in milliseconden, met de huidige modus.
+ *   Na het starten en na elke druk op P of B meet het programma 1000
+ *   frames en print dan eenmalig de gemiddelde frametijd in milliseconden.
  */
 
 #include "engine.hpp"
 #include <stdexcept>
 #include <cmath>
 #include <cstdio>
-#include <algorithm>
 
 World::World(int breedte, int hoogte, const std::string &titel)
     : venster(nullptr), breedte(breedte), hoogte(hoogte),
@@ -61,8 +59,8 @@ World::World(int breedte, int hoogte, const std::string &titel)
         throw std::runtime_error("GLEW initialisatie mislukt.");
     }
 
-    // Vsync uit zodat de frametijd meetbaar is (toets V om aan te zetten).
-    glfwSwapInterval(vsync ? 1 : 0);
+    // Vsync uit, anders meet je alleen de refreshrate van je scherm.
+    glfwSwapInterval(0);
 
     // --- Shaders ---
     const std::string vertexBron =
@@ -202,26 +200,15 @@ void World::render() {
     }
 
     // Pass 1: ondoorzichtige objecten (schrijven diepte).
-    std::vector<size_t> transparant;
     for (size_t i = 0; i < shapes.size(); i++) {
         if (shapes[i]->getMateriaal().alpha >= 1.0f) tekenShape(i);
-        else transparant.push_back(i);
     }
 
-    // Pass 2: transparante objecten, van ver naar dichtbij gesorteerd,
-    // zonder diepte te schrijven.
-    auto afstand2 = [&](size_t i) {
-        const Transform &tr = shapes[i]->getTransform();
-        float dx = tr.getTranslatieX() - oogW.at(0);
-        float dy = tr.getTranslatieY() - oogW.at(1);
-        float dz = tr.getTranslatieZ() - oogW.at(2);
-        return dx * dx + dy * dy + dz * dz;
-    };
-    std::sort(transparant.begin(), transparant.end(),
-              [&](size_t a, size_t b) { return afstand2(a) > afstand2(b); });
-
+    // Pass 2: transparante objecten, zonder diepte te schrijven.
     glDepthMask(GL_FALSE);
-    for (size_t i : transparant) tekenShape(i);
+    for (size_t i = 0; i < shapes.size(); i++) {
+        if (shapes[i]->getMateriaal().alpha < 1.0f) tekenShape(i);
+    }
     glDepthMask(GL_TRUE);
 }
 
@@ -268,26 +255,21 @@ bool World::toetsPress(int toets) {
 
 void World::resetMeting() {
     meetFrames = 0;
-    renderSom = 0.0;
+    gemeten = false;
     meetStart = glfwGetTime();
 }
 
-void World::meetFrame(double renderTijd) {
-    renderSom += renderTijd;
+void World::meetFrame() {
+    if (gemeten) return;
     meetFrames++;
     if (meetFrames >= 1000) {
         double totaal = glfwGetTime() - meetStart;
-        std::printf("[Meting] modus=%s animatie=%s vsync=%s projectie=%s | "
-                    "gemiddelde frametijd: %.4f ms | gemiddelde render() (CPU): %.4f ms (%d frames)\n",
+        std::printf("[Meting] modus=%s animatie=%s: gemiddelde frametijd %.4f ms (1000 frames)\n",
                     geoptimaliseerd ? "GEOPTIMALISEERD" : "NAIEF",
                     gepauzeerd ? "gepauzeerd" : "aan",
-                    vsync ? "aan" : "uit",
-                    camera.projectieNaam(),
-                    totaal / meetFrames * 1000.0,
-                    renderSom / meetFrames * 1000.0,
-                    meetFrames);
+                    totaal / meetFrames * 1000.0);
         std::fflush(stdout);
-        resetMeting();
+        gemeten = true;
     }
 }
 
@@ -300,27 +282,18 @@ void World::verwerkInvoer() {
     bool k4 = toetsPress(GLFW_KEY_4);
     bool kP = toetsPress(GLFW_KEY_P);
     bool kB = toetsPress(GLFW_KEY_B);
-    bool kV = toetsPress(GLFW_KEY_V);
 
-    if (k1) { camera.setProjectieType(PROJ_ORTHO);       std::printf("Projectie: %s\n", camera.projectieNaam()); }
-    if (k2) { camera.setProjectieType(PROJ_PARALLEL);    std::printf("Projectie: %s\n", camera.projectieNaam()); }
-    if (k3) { camera.setProjectieType(PROJ_ISOMETRISCH); std::printf("Projectie: %s\n", camera.projectieNaam()); }
-    if (k4) { camera.setProjectieType(PROJ_PERSPECTIEF); std::printf("Projectie: %s\n", camera.projectieNaam()); }
+    if (k1) camera.setProjectieType(PROJ_ORTHO);
+    if (k2) camera.setProjectieType(PROJ_PARALLEL);
+    if (k3) camera.setProjectieType(PROJ_ISOMETRISCH);
+    if (k4) camera.setProjectieType(PROJ_PERSPECTIEF);
 
     if (kP) {
         gepauzeerd = !gepauzeerd;
-        std::printf("Animatie: %s\n", gepauzeerd ? "gepauzeerd" : "aan");
         resetMeting();
     }
     if (kB) {
         geoptimaliseerd = !geoptimaliseerd;
-        std::printf("Modus: %s\n", geoptimaliseerd ? "GEOPTIMALISEERD" : "NAIEF");
-        resetMeting();
-    }
-    if (kV) {
-        vsync = !vsync;
-        glfwSwapInterval(vsync ? 1 : 0);
-        std::printf("Vsync: %s\n", vsync ? "aan" : "uit");
         resetMeting();
     }
 
@@ -355,13 +328,13 @@ void World::verwerkInvoer() {
     if (glfwGetKey(venster, GLFW_KEY_S) == GLFW_PRESS) camera.beweeg(0, 0,  stap);
     if (glfwGetKey(venster, GLFW_KEY_A) == GLFW_PRESS) camera.beweeg(-stap, 0, 0);
     if (glfwGetKey(venster, GLFW_KEY_D) == GLFW_PRESS) camera.beweeg( stap, 0, 0);
-    if (glfwGetKey(venster, GLFW_KEY_Q) == GLFW_PRESS) camera.beweeg(0,  stap, 0);
+    if (glfwGetKey(venster, GLFW_KEY_SPACE) == GLFW_PRESS) camera.beweeg(0,  stap, 0);
     if (glfwGetKey(venster, GLFW_KEY_E) == GLFW_PRESS) camera.beweeg(0, -stap, 0);
 
-    if (glfwGetKey(venster, GLFW_KEY_LEFT)  == GLFW_PRESS) camera.draai(kijk, 0);
-    if (glfwGetKey(venster, GLFW_KEY_RIGHT) == GLFW_PRESS) camera.draai(-kijk, 0);
-    if (glfwGetKey(venster, GLFW_KEY_UP)    == GLFW_PRESS) camera.draai(0, kijk);
-    if (glfwGetKey(venster, GLFW_KEY_DOWN)  == GLFW_PRESS) camera.draai(0, -kijk);
+    if (glfwGetKey(venster, GLFW_KEY_LEFT)  == GLFW_PRESS) camera.draai(-kijk, 0);
+    if (glfwGetKey(venster, GLFW_KEY_RIGHT) == GLFW_PRESS) camera.draai(kijk, 0);
+    if (glfwGetKey(venster, GLFW_KEY_UP)    == GLFW_PRESS) camera.draai(0, -kijk);
+    if (glfwGetKey(venster, GLFW_KEY_DOWN)  == GLFW_PRESS) camera.draai(0, kijk);
 }
 
 
@@ -374,20 +347,17 @@ void World::run() {
         glfwPollEvents();
 
         // Bewegingssnelheid is tijdsafhankelijk, zodat de besturing
-        // niet afhangt van de framerate (vsync aan of uit).
+        // niet afhangt van de framerate.
         double nuFrame = glfwGetTime();
         frameDt = nuFrame - vorigFrame;
         vorigFrame = nuFrame;
 
         verwerkInvoer();
 
-        double r0 = glfwGetTime();
         render();
-        double r1 = glfwGetTime();
-
         glfwSwapBuffers(venster);
 
-        meetFrame(r1 - r0);
+        meetFrame();
     }
 }
 

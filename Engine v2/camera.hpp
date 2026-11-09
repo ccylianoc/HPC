@@ -23,11 +23,8 @@ public:
     void setPositie(const Vector &p);
     Vector getPositie() const;
 
-    void setAspect(float a) { aspect = a; }
-
     void setProjectieType(ProjectieType t) { projType = t; }
     ProjectieType getProjectieType() const { return projType; }
-    const char *projectieNaam() const;
 
     Matrix4 projectie() const;              // afhankelijk van ProjectieType
     Matrix4 view() const;                   // view-matrix (zie camera.cpp)

@@ -14,9 +14,9 @@ int main() {
         kubus.getTransform().setTranslatie(-1.2f, 0.0f, 0.0f);
         kubus.getTransform().setSchaal(1.5f);
         kubus.setRotatieSnelheid(0.0f, 1.0f, 0.0f);
-        kubus.addProperty<AmbientCoefficient>(0.24725f, 0.1995f, 0.0745f);
-        kubus.addProperty<DiffuseCoefficient>(0.75164f, 0.60648f, 0.22648f);
-        kubus.addProperty<SpeculaireCoefficient>(0.628281f, 0.555802f, 0.366065f, 32.0f);
+        kubus.addProperty<AmbientCoefficient>(0.5f, 0.5f, 0.5f);
+        kubus.addProperty<DiffuseCoefficient>(0.0f, 0.0f, 0.0f);
+        kubus.addProperty<SpeculaireCoefficient>(0.0f, 0.0f, 0.0f);
 
         // Piramide: glas (doorzichtig)
         Pyramid &piramide = wereld.addShape<Pyramid>();
