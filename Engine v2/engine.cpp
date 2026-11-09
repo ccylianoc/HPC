@@ -1,13 +1,44 @@
+/*
+ * TOETSENOVERZICHT
+ * ----------------
+ * Camera (zonder Shift):
+ *   (alle snelheden zijn per seconde, dus onafhankelijk van de framerate)
+ *   W / S            vooruit / achteruit
+ *   A / D            links / rechts
+ *   Q / E            omhoog / omlaag
+ *   Pijltjes         yaw (links/rechts) en pitch (omhoog/omlaag)
+ *
+ * Lichtbron (met Shift ingedrukt; de camera reageert dan niet):
+ *   Shift + pijltjes links/rechts   licht in x
+ *   Shift + pijltjes omhoog/omlaag  licht in y
+ *   Shift + W / S                   licht in -z / +z
+ *
+ * Projectie:
+ *   1  orthografisch
+ *   2  parallel (oblique, cabinet)
+ *   3  isometrisch
+ *   4  perspectief (standaard)
+ *
+ * Efficientie en meting:
+ *   P  animatie pauzeren / hervatten (bij pauze verandert de rotatie niet,
+ *      dus de modelmatrix-cache wordt volledig benut)
+ *   B  wisselen tussen GEOPTIMALISEERD (viewProjection 1x per frame +
+ *      modelcache) en NAIEF (alles per shape opnieuw berekend)
+ *   V  vsync aan / uit (standaard uit, anders meet je alleen de refresh rate)
+ *   Elke 1000 frames print de console de gemiddelde frametijd en de
+ *   gemiddelde render()-tijd (CPU) in milliseconden, met de huidige modus.
+ */
+
 #include "engine.hpp"
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 #include <stdexcept>
 #include <cmath>
+#include <cstdio>
+#include <algorithm>
 
 World::World(int breedte, int hoogte, const std::string &titel)
     : venster(nullptr), breedte(breedte), hoogte(hoogte),
-      camera(Vector({0, 0, 0}), 1.0f, 800.0f / 600.0f, 0.1f, 100.0f),
-      lichtbron(Vector({2, 2, 3}), 1.0f, 1.0f, 1.0f){
+      camera(Vector({0, 0, 0}), 1.0f, (float)breedte / (float)hoogte, 0.1f, 100.0f),
+      lichtbron(Vector({0.2f, 1.2f, 0.0f}), 1.0f, 1.0f, 1.0f){
 
     if (!glfwInit()) {
         throw std::runtime_error("GLFW initialisatie mislukt.");
@@ -30,14 +61,16 @@ World::World(int breedte, int hoogte, const std::string &titel)
         throw std::runtime_error("GLEW initialisatie mislukt.");
     }
 
+    // Vsync uit zodat de frametijd meetbaar is (toets V om aan te zetten).
+    glfwSwapInterval(vsync ? 1 : 0);
+
     // --- Shaders ---
     const std::string vertexBron =
         R"(#version 330 core
         in vec2 uv;
         in vec3 pos;
         in vec3 normaal;
-        uniform mat4 projection;
-        uniform mat4 view;
+        uniform mat4 viewProjection;
         uniform mat4 model;
         out vec2 fragUV;
         out vec3 fragNormaal;
@@ -49,8 +82,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
             vec4 wereld = model * vec4(pos, 1.0);
             fragPos = wereld.xyz;
             fragObjectPos = pos;
-            vec4 clip = projection * view * wereld;
-            gl_Position = clip;
+            gl_Position = viewProjection * wereld;
         })";
 
     const std::string fragmentBron =
@@ -65,6 +97,8 @@ World::World(int breedte, int hoogte, const std::string &titel)
         uniform bool gebruiktTextuur;
         uniform vec3 lightPos;
         uniform vec3 lightColor;
+        uniform vec3 eyePos;
+        uniform vec3 kleur;
 
         struct Material {
             vec3 ambient;
@@ -89,7 +123,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
 
             vec3 naarLicht = normalize(lightPos - fragPos);
 
-            vec3 basiskleur = gebruiktTextuur ? texture(tex, fragUV).rgb : vec3(1.0);
+            vec3 basiskleur = (gebruiktTextuur ? texture(tex, fragUV).rgb : vec3(1.0)) * kleur;
 
             vec3 ambient = lightColor * material.ambient * basiskleur;
 
@@ -97,7 +131,7 @@ World::World(int breedte, int hoogte, const std::string &titel)
             vec3 diffuse = diffuseFactor * lightColor * material.diffuse * basiskleur;
 
             vec3 reflectie = reflect(-naarLicht, n);
-            vec3 naarOog = normalize(-fragPos);
+            vec3 naarOog = normalize(eyePos - fragPos);
             float specularFactor = pow(max(0.0, dot(naarOog, reflectie)), material.shininess);
             vec3 specular = specularFactor * lightColor * material.specular;
 
@@ -112,73 +146,8 @@ World::World(int breedte, int hoogte, const std::string &titel)
     programma = prog.release();
     glUseProgram(programma);
 
-    int tw, th, tk;
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char *data = stbi_load("texture.png", &tw, &th, &tk, 0);
-    if (!data) throw std::runtime_error("Texture inladen mislukt: texture.png");
-
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tw, th, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(data);
-
     glUseProgram(programma);
     glUniform1i(glGetUniformLocation(programma, "tex"), 0);
-
-    // --- Shapes aanmaken; het programma moet actief zijn voor de
-    // attribuut-locaties opgevraagd kunnen worden. ---
-    shapes.push_back(std::make_unique<Cube>(programma));
-    shapes.push_back(std::make_unique<Pyramid>(programma));
-    shapes.push_back(std::make_unique<Sphere>(programma));
-    shapes.push_back(std::make_unique<Cylinder>(programma));
-
-    // --- Materialen (eenmalig instellen) ---
-    Materiaal goud;
-    goud.ambient[0] = 0.24725f; goud.ambient[1] = 0.1995f;  goud.ambient[2] = 0.0745f;
-    goud.diffuse[0] = 0.75164f; goud.diffuse[1] = 0.60648f; goud.diffuse[2] = 0.22648f;
-    goud.specular[0] = 0.628281f; goud.specular[1] = 0.555802f; goud.specular[2] = 0.366065f;
-    goud.shininess = 32.0f;
-    goud.alpha = 1.0f;
-    shapes[0]->setMateriaal(goud);
-
-    Materiaal glas;
-    glas.ambient[0] = 0.1f;  glas.ambient[1] = 0.1f;  glas.ambient[2] = 0.15f;
-    glas.diffuse[0] = 0.3f;  glas.diffuse[1] = 0.4f;  glas.diffuse[2] = 0.5f;
-    glas.specular[0] = 1.0f; glas.specular[1] = 1.0f; glas.specular[2] = 1.0f;
-    glas.shininess = 64.0f;
-    glas.alpha = 0.4f;      // doorzichtig
-    shapes[1]->setMateriaal(glas);
-
-    Materiaal steen;
-    steen.ambient[0] = 0.4f; steen.ambient[1] = 0.4f; steen.ambient[2] = 0.4f;
-    steen.diffuse[0] = 1.0f; steen.diffuse[1] = 1.0f; steen.diffuse[2] = 1.0f;
-    steen.specular[0] = 0.3f; steen.specular[1] = 0.3f; steen.specular[2] = 0.3f;
-    steen.shininess = 16.0f;
-    steen.alpha = 1.0f;
-    steen.gebruiktTextuur = true;
-    shapes[2]->setMateriaal(steen);
-
-    Materiaal koper;
-    koper.ambient[0] = 0.19f; koper.ambient[1] = 0.07f; koper.ambient[2] = 0.02f;
-    koper.diffuse[0] = 0.70f; koper.diffuse[1] = 0.27f; koper.diffuse[2] = 0.08f;
-    koper.specular[0] = 0.99f; koper.specular[1] = 0.94f; koper.specular[2] = 0.81f;
-    koper.shininess = 64.0f;
-    koper.alpha = 1.0f;
-    shapes[3]->setMateriaal(koper);
-
-    // --- Beginposities en -groottes (eenmalig) ---
-    shapes[0]->getTransform().setTranslatie(-1.2f, 0.0f, 0.0f);
-    shapes[0]->getTransform().setSchaal(1.5f);
-
-    shapes[1]->getTransform().setTranslatie(1.2f, 0.0f, 0.0f);
-    shapes[1]->getTransform().setSchaal(1.5f);
-
-    shapes[2]->getTransform().setTranslatie(-1.2f, 3.0f, 0.0f);
-    shapes[2]->getTransform().setSchaal(1.5f);
-
-    shapes[3]->getTransform().setTranslatie(1.2f, 3.0f, 0.0f);
-    shapes[3]->getTransform().setSchaal(1.5f);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -190,44 +159,69 @@ World::World(int breedte, int hoogte, const std::string &titel)
 void World::render() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(programma);
-    glDisable(GL_BLEND);
 
-    Matrix4 projectie = camera.projectie();
-    Matrix4 view = camera.view();
+    // Blending blijft aan (de constructor zet het aan); het transparante
+    // materiaal wordt zo echt gemengd met wat erachter staat.
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    GLfloat glProjectie[16], glView[16];
-    projectie.naarGL(glProjectie);
-    view.naarGL(glView);
+    // Lichtpositie, lichtkleur en oogpositie komen uit de objecten.
+    Vector lp = lichtbron.getPositie();
+    glUniform3f(glGetUniformLocation(programma, "lightPos"), lp.at(0), lp.at(1), lp.at(2));
+    glUniform3f(glGetUniformLocation(programma, "lightColor"),
+                lichtbron.getKleur(0), lichtbron.getKleur(1), lichtbron.getKleur(2));
+    Vector oogW = camera.oogWereld();
+    glUniform3f(glGetUniformLocation(programma, "eyePos"), oogW.at(0), oogW.at(1), oogW.at(2));
 
-    glUniform3f(glGetUniformLocation(programma, "lightPos"), 0.2f, 1.2f, 0.0f);
-    glUniform3f(glGetUniformLocation(programma, "lightColor"), 1.0f, 1.0f, 1.0f);
-
-    glUniformMatrix4fv(glGetUniformLocation(programma, "projection"), 1, GL_FALSE, glProjectie);
-    glUniformMatrix4fv(glGetUniformLocation(programma, "view"), 1, GL_FALSE, glView);
-
-    float t = (float)glfwGetTime();
-
-    // De animatie past de rotatie van elke vorm aan. Positie en schaal
-    // blijven staan; alleen de rotatie verandert per frame.
-    if (shapes.size() >= 3) {
-        shapes[0]->getTransform().setRotatie(0.0f, t, 0.0f);
-        shapes[1]->getTransform().setRotatie(-t * 0.7f, 0.0f, 0.0f);
-        shapes[2]->getTransform().setRotatie(0.0f, 0.0f, t * 1.5f);
+    // Geoptimaliseerd: projectie * view een keer per frame berekenen.
+    // (In naieve modus gebeurt dit per shape in tekenShape().)
+    if (geoptimaliseerd) {
+        Matrix4 vp = camera.compleet();
+        GLfloat glVP[16];
+        vp.naarGL(glVP);
+        glUniformMatrix4fv(glGetUniformLocation(programma, "viewProjection"), 1, GL_FALSE, glVP);
     }
-    if (shapes.size() >= 4) {
-        shapes[3]->getTransform().setRotatie(0.0f, t * 0.5f, 0.0f);
+
+    // Animatietijd loopt alleen door als de animatie niet gepauzeerd is.
+    double nu = glfwGetTime();
+    if (!gepauzeerd) animTijd += nu - laatsteTijd;
+    laatsteTijd = nu;
+    float t = (float)animTijd;
+
+    // Vormen met een rotatiesnelheid draaien vanzelf. Alleen de rotatie
+    // verandert; positie en schaal blijven staan. Bij pauze zijn de
+    // waarden gelijk, dus Transform verhoogt zijn versie niet en blijft
+    // de modelmatrix uit de cache komen.
+    for (size_t i = 0; i < shapes.size(); i++) {
+        if (shapes[i]->isGeanimeerd()) {
+            shapes[i]->getTransform().setRotatie(
+                shapes[i]->getRotatieSnelheid(0) * t,
+                shapes[i]->getRotatieSnelheid(1) * t,
+                shapes[i]->getRotatieSnelheid(2) * t);
+        }
     }
 
     // Pass 1: ondoorzichtige objecten (schrijven diepte).
+    std::vector<size_t> transparant;
     for (size_t i = 0; i < shapes.size(); i++) {
         if (shapes[i]->getMateriaal().alpha >= 1.0f) tekenShape(i);
+        else transparant.push_back(i);
     }
 
-    // Pass 2: transparante objecten, zonder diepte te schrijven.
+    // Pass 2: transparante objecten, van ver naar dichtbij gesorteerd,
+    // zonder diepte te schrijven.
+    auto afstand2 = [&](size_t i) {
+        const Transform &tr = shapes[i]->getTransform();
+        float dx = tr.getTranslatieX() - oogW.at(0);
+        float dy = tr.getTranslatieY() - oogW.at(1);
+        float dz = tr.getTranslatieZ() - oogW.at(2);
+        return dx * dx + dy * dy + dz * dz;
+    };
+    std::sort(transparant.begin(), transparant.end(),
+              [&](size_t a, size_t b) { return afstand2(a) > afstand2(b); });
+
     glDepthMask(GL_FALSE);
-    for (size_t i = 0; i < shapes.size(); i++) {
-        if (shapes[i]->getMateriaal().alpha < 1.0f) tekenShape(i);
-    }
+    for (size_t i : transparant) tekenShape(i);
     glDepthMask(GL_TRUE);
 }
 
@@ -238,43 +232,162 @@ void World::tekenShape(size_t i) {
     glUniform3fv(glGetUniformLocation(programma, "material.specular"), 1, m.specular);
     glUniform1f(glGetUniformLocation(programma, "material.shininess"), m.shininess);
     glUniform1f(glGetUniformLocation(programma, "alpha"), m.alpha);
+    glUniform3fv(glGetUniformLocation(programma, "kleur"), 1, m.kleur);
 
-    Matrix4 model = shapes[i]->getModel();
     GLfloat glModel[16];
-    model.naarGL(glModel);
+    if (geoptimaliseerd) {
+        // Gecachete modelmatrix (alleen herberekend bij gewijzigde Transform).
+        shapes[i]->getModel().naarGL(glModel);
+    } else {
+        // Naief: viewProjection en model per shape volledig opnieuw berekenen.
+        Matrix4 vp = camera.compleet();
+        GLfloat glVP[16];
+        vp.naarGL(glVP);
+        glUniformMatrix4fv(glGetUniformLocation(programma, "viewProjection"), 1, GL_FALSE, glVP);
+
+        Matrix4 model = shapes[i]->getModelOngecachet();
+        model.naarGL(glModel);
+    }
     glUniformMatrix4fv(glGetUniformLocation(programma, "model"), 1, GL_FALSE, glModel);
 
     glUniform1i(glGetUniformLocation(programma, "gebruiktTextuur"), m.gebruiktTextuur ? 1 : 0);
     if (m.gebruiktTextuur) {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture);
+        glBindTexture(GL_TEXTURE_2D, m.textuur);
     }
 
     shapes[i]->draw();
 }
 
+bool World::toetsPress(int toets) {
+    bool nu = glfwGetKey(venster, toets) == GLFW_PRESS;
+    bool event = nu && !toetsVorig[toets];
+    toetsVorig[toets] = nu;
+    return event;
+}
+
+void World::resetMeting() {
+    meetFrames = 0;
+    renderSom = 0.0;
+    meetStart = glfwGetTime();
+}
+
+void World::meetFrame(double renderTijd) {
+    renderSom += renderTijd;
+    meetFrames++;
+    if (meetFrames >= 1000) {
+        double totaal = glfwGetTime() - meetStart;
+        std::printf("[Meting] modus=%s animatie=%s vsync=%s projectie=%s | "
+                    "gemiddelde frametijd: %.4f ms | gemiddelde render() (CPU): %.4f ms (%d frames)\n",
+                    geoptimaliseerd ? "GEOPTIMALISEERD" : "NAIEF",
+                    gepauzeerd ? "gepauzeerd" : "aan",
+                    vsync ? "aan" : "uit",
+                    camera.projectieNaam(),
+                    totaal / meetFrames * 1000.0,
+                    renderSom / meetFrames * 1000.0,
+                    meetFrames);
+        std::fflush(stdout);
+        resetMeting();
+    }
+}
+
+void World::verwerkInvoer() {
+    // Alle toetsen met edge-detectie elk frame pollen, zodat de
+    // vorige-toestand altijd actueel is.
+    bool k1 = toetsPress(GLFW_KEY_1);
+    bool k2 = toetsPress(GLFW_KEY_2);
+    bool k3 = toetsPress(GLFW_KEY_3);
+    bool k4 = toetsPress(GLFW_KEY_4);
+    bool kP = toetsPress(GLFW_KEY_P);
+    bool kB = toetsPress(GLFW_KEY_B);
+    bool kV = toetsPress(GLFW_KEY_V);
+
+    if (k1) { camera.setProjectieType(PROJ_ORTHO);       std::printf("Projectie: %s\n", camera.projectieNaam()); }
+    if (k2) { camera.setProjectieType(PROJ_PARALLEL);    std::printf("Projectie: %s\n", camera.projectieNaam()); }
+    if (k3) { camera.setProjectieType(PROJ_ISOMETRISCH); std::printf("Projectie: %s\n", camera.projectieNaam()); }
+    if (k4) { camera.setProjectieType(PROJ_PERSPECTIEF); std::printf("Projectie: %s\n", camera.projectieNaam()); }
+
+    if (kP) {
+        gepauzeerd = !gepauzeerd;
+        std::printf("Animatie: %s\n", gepauzeerd ? "gepauzeerd" : "aan");
+        resetMeting();
+    }
+    if (kB) {
+        geoptimaliseerd = !geoptimaliseerd;
+        std::printf("Modus: %s\n", geoptimaliseerd ? "GEOPTIMALISEERD" : "NAIEF");
+        resetMeting();
+    }
+    if (kV) {
+        vsync = !vsync;
+        glfwSwapInterval(vsync ? 1 : 0);
+        std::printf("Vsync: %s\n", vsync ? "aan" : "uit");
+        resetMeting();
+    }
+
+    bool shift = glfwGetKey(venster, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS ||
+                 glfwGetKey(venster, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS;
+
+    if (shift) {
+        // Lichtbron verplaatsen
+        float lichtStap = 3.0f * (float)frameDt;   // 3 eenheden per seconde
+        float dx = 0, dy = 0, dz = 0;
+        if (glfwGetKey(venster, GLFW_KEY_LEFT)  == GLFW_PRESS) dx -= lichtStap;
+        if (glfwGetKey(venster, GLFW_KEY_RIGHT) == GLFW_PRESS) dx += lichtStap;
+        if (glfwGetKey(venster, GLFW_KEY_UP)    == GLFW_PRESS) dy += lichtStap;
+        if (glfwGetKey(venster, GLFW_KEY_DOWN)  == GLFW_PRESS) dy -= lichtStap;
+        if (glfwGetKey(venster, GLFW_KEY_W)     == GLFW_PRESS) dz -= lichtStap;
+        if (glfwGetKey(venster, GLFW_KEY_S)     == GLFW_PRESS) dz += lichtStap;
+
+        if (dx != 0 || dy != 0 || dz != 0) {
+            Vector p = lichtbron.getPositie();
+            p.set(0, p.at(0) + dx);
+            p.set(1, p.at(1) + dy);
+            p.set(2, p.at(2) + dz);
+            lichtbron.setPositie(p);
+        }
+        return;
+    }
+
+    float stap = 6.0f * (float)frameDt;    // 6 eenheden per seconde
+    float kijk = 1.2f * (float)frameDt;    // 1,2 radialen per seconde
+
+    if (glfwGetKey(venster, GLFW_KEY_W) == GLFW_PRESS) camera.beweeg(0, 0, -stap);
+    if (glfwGetKey(venster, GLFW_KEY_S) == GLFW_PRESS) camera.beweeg(0, 0,  stap);
+    if (glfwGetKey(venster, GLFW_KEY_A) == GLFW_PRESS) camera.beweeg(-stap, 0, 0);
+    if (glfwGetKey(venster, GLFW_KEY_D) == GLFW_PRESS) camera.beweeg( stap, 0, 0);
+    if (glfwGetKey(venster, GLFW_KEY_Q) == GLFW_PRESS) camera.beweeg(0,  stap, 0);
+    if (glfwGetKey(venster, GLFW_KEY_E) == GLFW_PRESS) camera.beweeg(0, -stap, 0);
+
+    if (glfwGetKey(venster, GLFW_KEY_LEFT)  == GLFW_PRESS) camera.draai(kijk, 0);
+    if (glfwGetKey(venster, GLFW_KEY_RIGHT) == GLFW_PRESS) camera.draai(-kijk, 0);
+    if (glfwGetKey(venster, GLFW_KEY_UP)    == GLFW_PRESS) camera.draai(0, kijk);
+    if (glfwGetKey(venster, GLFW_KEY_DOWN)  == GLFW_PRESS) camera.draai(0, -kijk);
+}
+
 
 void World::run() {
+    laatsteTijd = glfwGetTime();
+    double vorigFrame = laatsteTijd;
+    resetMeting();
+
     while (!glfwWindowShouldClose(venster)) {
         glfwPollEvents();
 
-        float stap = 0.1f;
-        float kijk = 0.02f;
+        // Bewegingssnelheid is tijdsafhankelijk, zodat de besturing
+        // niet afhangt van de framerate (vsync aan of uit).
+        double nuFrame = glfwGetTime();
+        frameDt = nuFrame - vorigFrame;
+        vorigFrame = nuFrame;
 
-        if (glfwGetKey(venster, GLFW_KEY_W) == GLFW_PRESS) camera.beweeg(0, 0, -stap);
-        if (glfwGetKey(venster, GLFW_KEY_S) == GLFW_PRESS) camera.beweeg(0, 0,  stap);
-        if (glfwGetKey(venster, GLFW_KEY_A) == GLFW_PRESS) camera.beweeg(-stap, 0, 0);
-        if (glfwGetKey(venster, GLFW_KEY_D) == GLFW_PRESS) camera.beweeg( stap, 0, 0);
-        if (glfwGetKey(venster, GLFW_KEY_Q) == GLFW_PRESS) camera.beweeg(0,  stap, 0);
-        if (glfwGetKey(venster, GLFW_KEY_E) == GLFW_PRESS) camera.beweeg(0, -stap, 0);
+        verwerkInvoer();
 
-        if (glfwGetKey(venster, GLFW_KEY_LEFT)  == GLFW_PRESS) camera.draai(-kijk, 0);
-        if (glfwGetKey(venster, GLFW_KEY_RIGHT) == GLFW_PRESS) camera.draai(kijk, 0);
-        if (glfwGetKey(venster, GLFW_KEY_UP)    == GLFW_PRESS) camera.draai(0, -kijk);
-        if (glfwGetKey(venster, GLFW_KEY_DOWN)  == GLFW_PRESS) camera.draai(0, kijk);
-
+        double r0 = glfwGetTime();
         render();
+        double r1 = glfwGetTime();
+
         glfwSwapBuffers(venster);
+
+        meetFrame(r1 - r0);
     }
 }
 

@@ -4,20 +4,14 @@
 #include <vector>
 #include "matrix.hpp"
 #include "transformatie.hpp"
+#include "properties.hpp"
+#include <memory>
+#include <type_traits>
+#include <utility>
 
 // Een Shape is een tekenbare vorm met eigen geometrie op de GPU.
 // De vertices komen uit shapes.h en bestaan uit 8 floats per vertex:
 // x, y, z (positie), nx, ny, nz (normaal) en u, v (textuurcoordinaten).
-
-struct Materiaal {
-    float ambient[3]  = {0.3f, 0.3f, 0.3f};
-    float diffuse[3]  = {0.8f, 0.8f, 0.8f};
-    float specular[3] = {1.0f, 1.0f, 1.0f};
-    float shininess   = 32.0f;
-    float alpha       = 1.0f;   // 1.0 = ondoorzichtig
-    bool gebruiktTextuur = false;
-};
-
 
 class Shape {
     protected:
@@ -33,18 +27,59 @@ class Shape {
     private:
         Materiaal materiaal;
         Transform transform;
+        std::vector<std::unique_ptr<Property>> eigenschappen;
+        float snelheid[3] = {0.0f, 0.0f, 0.0f};   // rotatiesnelheid in rad/s
+
+        // Cache van de modelmatrix; wordt alleen herberekend als de
+        // versie van de Transform verandert.
+        mutable Matrix4 modelCache;
+        mutable unsigned long cacheVersie = (unsigned long)-1;
 
     public:
         void setMateriaal(const Materiaal &m) { materiaal = m; }
         const Materiaal &getMateriaal() const { return materiaal; }
+
+        // Voegt een eigenschap toe (kleur, opaciteit, textuur, ...) en past
+        // het materiaal meteen aan. Gebruik:
+        //   vorm.addProperty<Kleur>(1.0f, 0.0f, 0.0f);
+        // Latere eigenschappen van hetzelfde soort overschrijven eerdere.
+        template <typename P, typename... Args>
+        P &addProperty(Args &&...args) {
+            static_assert(std::is_base_of<Property, P>::value,
+                          "addProperty verwacht een subclass van Property");
+            auto eigenschap = std::make_unique<P>(std::forward<Args>(args)...);
+            eigenschap->apply(materiaal);
+            P &verwijzing = *eigenschap;
+            eigenschappen.push_back(std::move(eigenschap));
+            return verwijzing;
+        }
+
+        // Laat de vorm vanzelf draaien: rotatie = snelheid * tijd (rad/s).
+        // Alle drie nul betekent geen animatie.
+        void setRotatieSnelheid(float x, float y, float z) {
+            snelheid[0] = x; snelheid[1] = y; snelheid[2] = z;
+        }
+        float getRotatieSnelheid(int as) const { return snelheid[as]; }
+        bool isGeanimeerd() const {
+            return snelheid[0] != 0.0f || snelheid[1] != 0.0f || snelheid[2] != 0.0f;
+        }
 
         // Geeft toegang tot de transformatie van deze vorm, zodat de
         // gebruiker schaal, rotatie en translatie kan instellen.
         Transform &getTransform() { return transform; }
         const Transform &getTransform() const { return transform; }
 
-        // Modelmatrix op basis van de huidige transformatie.
-        Matrix4 getModel() const { return transform.model(); }
+        // Modelmatrix met cache: alleen opnieuw berekend bij een gewijzigde Transform.
+        const Matrix4 &getModel() const {
+            if (cacheVersie != transform.versie()) {
+                modelCache = transform.model();
+                cacheVersie = transform.versie();
+            }
+            return modelCache;
+        }
+
+        // Modelmatrix zonder cache (voor de "naieve" meetmodus).
+        Matrix4 getModelOngecachet() const { return transform.model(); }
 
         Shape();
         virtual ~Shape();

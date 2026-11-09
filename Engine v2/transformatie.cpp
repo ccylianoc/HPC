@@ -8,16 +8,26 @@ Transform::Transform()
       tx(0), ty(0), tz(0),
       rx(0), ry(0), rz(0) {}
 
-void Transform::setSchaal(float x, float y, float z) { sx = x; sy = y; sz = z; }
+// Alle setters verhogen de versie alleen als de waarde echt verandert.
+void Transform::setSchaal(float x, float y, float z) {
+    if (x == sx && y == sy && z == sz) return;
+    sx = x; sy = y; sz = z; versie_++;
+}
 void Transform::setSchaal(float s) { setSchaal(s, s, s); }
 
-void Transform::setTranslatie(float x, float y, float z) { tx = x; ty = y; tz = z; }
+void Transform::setTranslatie(float x, float y, float z) {
+    if (x == tx && y == ty && z == tz) return;
+    tx = x; ty = y; tz = z; versie_++;
+}
 
-void Transform::setRotatie(float x, float y, float z) { rx = x; ry = y; rz = z; }
+void Transform::setRotatie(float x, float y, float z) {
+    if (x == rx && y == ry && z == rz) return;
+    rx = x; ry = y; rz = z; versie_++;
+}
 
-void Transform::schaal(float x, float y, float z) { sx *= x; sy *= y; sz *= z; }
-void Transform::transleer(float x, float y, float z) { tx += x; ty += y; tz += z; }
-void Transform::roteer(float x, float y, float z) { rx += x; ry += y; rz += z; }
+void Transform::schaal(float x, float y, float z) { setSchaal(sx * x, sy * y, sz * z); }
+void Transform::transleer(float x, float y, float z) { setTranslatie(tx + x, ty + y, tz + z); }
+void Transform::roteer(float x, float y, float z) { setRotatie(rx + x, ry + y, rz + z); }
 
 Matrix4 Transform::model() const {
     float cx = std::cos(rx), sxr = std::sin(rx);

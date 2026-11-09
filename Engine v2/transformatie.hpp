@@ -12,6 +12,7 @@ class Transform {
         float sx, sy, sz;          // schaling per as
         float tx, ty, tz;          // translatie per as
         float rx, ry, rz;          // rotatie per as, in radialen
+        unsigned long versie_ = 0; // wordt verhoogd zodra een waarde echt verandert
 
     public:
         Transform();
@@ -34,6 +35,9 @@ class Transform {
         float getRotatieX() const { return rx; }
         float getRotatieY() const { return ry; }
         float getRotatieZ() const { return rz; }
+
+        // Versieteller voor het cachen van de modelmatrix.
+        unsigned long versie() const { return versie_; }
 
         // Bouwt de modelmatrix: translatie * rz * ry * rx * schaling.
         Matrix4 model() const;

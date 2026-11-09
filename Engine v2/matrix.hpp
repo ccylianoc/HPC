@@ -23,6 +23,9 @@ class Matrix {
         bool operator==(const Matrix &andere) const;
         bool operator!=(const Matrix &andere) const;
 
+        Matrix operator+(const Matrix &andere) const;
+        Matrix operator-(const Matrix &andere) const;
+
         Matrix operator*(const Matrix &andere) const;
         Vector operator*(const Vector &v) const;
         friend std::ostream &operator<<(std::ostream &os, const Matrix &mat);

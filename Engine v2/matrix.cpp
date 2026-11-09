@@ -40,6 +40,28 @@ bool Matrix:: operator!=(const Matrix &andere) const{
     return !(*this == andere);
 }
 
+Matrix Matrix:: operator+(const Matrix &andere) const{
+    if (rij != andere.rij || kol != andere.kol) {
+        throw std::invalid_argument("Afmetingen komen niet overeen [op+]");
+    }
+    Matrix resultaat(rij, kol);
+    for (int i = 0; i < (int)m.size(); i++) {
+        resultaat.m[i] = m[i] + andere.m[i];
+    }
+    return resultaat;
+}
+
+Matrix Matrix:: operator-(const Matrix &andere) const{
+    if (rij != andere.rij || kol != andere.kol) {
+        throw std::invalid_argument("Afmetingen komen niet overeen [op-]");
+    }
+    Matrix resultaat(rij, kol);
+    for (int i = 0; i < (int)m.size(); i++) {
+        resultaat.m[i] = m[i] - andere.m[i];
+    }
+    return resultaat;
+}
+
 Matrix Matrix:: operator*(const Matrix &andere) const{
     if(kol != andere.rij){
         throw std::invalid_argument("Aantal kol != aantal rij [op*]");
